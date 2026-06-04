@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Match Scanner — ระบบวิเคราะห์และทายผลบอลล่วงหน้า</title>
+    <!-- Fonts & Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Teko:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -12,6 +13,7 @@
     <h2 class="sr-only">AI Match Scanner — ระบบวิเคราะห์และทายผลบอลล่วงหน้าด้วย AI</h2>
 
     <div id="app">
+        <!-- Header Section -->
         <div class="hdr">
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                 <div>
@@ -34,6 +36,7 @@
             </div>
         </div>
 
+        <!-- Main Content Layout Grid -->
         <div class="grid-top">
             <div class="scanner-card">
                 <div class="scanner-hdr">
@@ -45,20 +48,25 @@
                         </div>
                     </div>
                     <div class="scanner-meta">
-                        <input type="date" id="date-picker" class="date-picker-box" title="คลิกเพื่อเลือกวันที่">
+                        <input type="date" id="date-picker" class="date-picker-box" title="เลือกวันที่ต้องการดูตาราง">
                         <div class="update-time"><span id="scan-time">อัปเดตล่าสุด --:--</span></div>
                         <button class="filter-btn" id="btn-refresh">รีเฟรช</button>
                     </div>
                 </div>
 
+                <!-- 🔥 AI Golden Picks Section -->
+                <div class="golden-picks-wrapper" style="display: none;" id="golden-section">
+                    <div class="golden-section-title">
+                        <span style="color: #fbbf24;">★</span> TOP 5 AI GOLDEN PICKS (ทีเด็ดประจำวัน)
+                    </div>
+                    <div class="golden-cards-container" id="golden-picks-container">
+                        <!-- การ์ดทีเด็ดจะถูกสคริปต์วาดลงที่นี่โดยอัตโนมัติ -->
+                    </div>
+                </div>
+
                 <div class="filter-row">
                     <span class="filter-label">ลีก:</span>
-                    <button class="filter-btn active" data-filter-type="league" data-value="ALL">ทั้งหมด</button>
-                    <button class="filter-btn" data-filter-type="league" data-value="ENG PR">EPL</button>
-                    <button class="filter-btn" data-filter-type="league" data-value="GER BL">Bundesliga</button>
-                    <button class="filter-btn" data-filter-type="league" data-value="SPA LA">La Liga</button>
-                    <button class="filter-btn" data-filter-type="league" data-value="ITA SA">Serie A</button>
-                    <button class="filter-btn" data-filter-type="league" data-value="FRA LI">Ligue 1</button>
+                    <!-- ปุ่มลีคแบบ Dynamic จะถูกแทรกที่นี่ -->
                     <span class="filter-label" style="margin-left:auto">AI Score:</span>
                     <button class="filter-btn" data-filter-type="score" data-value="ALL">ทั้งหมด</button>
                     <button class="filter-btn" data-filter-type="score" data-value="HIGH">สูง 70+</button>
@@ -72,7 +80,7 @@
                             <tr>
                                 <th style="width:70px; text-align:center;">เวลา</th>
                                 <th>คู่แข่งขัน</th>
-                                <th style="width:90px">ลีก</th>
+                                <th style="width:110px">ลีก</th>
                                 <th style="text-align:center;width:100px">AI SCORE</th>
                                 <th style="text-align:center;width:110px">สถานะ</th>
                             </tr>
@@ -87,6 +95,13 @@
                     </table>
                 </div>
 
+                <!-- กล่องปุ่มควบคุมการเปลี่ยนหน้า (Pagination) -->
+                <div class="pagination-container" id="pagination-controls" style="display: none;">
+                    <button class="page-btn" id="btn-prev" disabled>« หน้าก่อนหน้า</button>
+                    <span class="page-info" id="page-info">หน้า 1 จาก 1</span>
+                    <button class="page-btn" id="btn-next">หน้าถัดไป »</button>
+                </div>
+
                 <div class="legend-row">
                     <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div>ACTIVE (คัดผ่าน)</div>
                     <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div>WATCHLIST (รอดูเพิ่ม)</div>
@@ -95,6 +110,7 @@
                 <div class="disclaimer">AI SCORE อ้างอิงจากโมเดลวิเคราะห์หลายตัวแปร ไม่ใช่การรับประกันผลแข่งขัน</div>
             </div>
 
+            <!-- Right Column Panels -->
             <div class="right-col">
                 <div class="mini-card" id="dist-card">
                     <div class="mini-card-title" id="dist-title">AI SCORE DISTRIBUTION</div>
@@ -124,6 +140,7 @@
             </div>
         </div>
 
+        <!-- Bottom Insights Row Grid -->
         <div class="bottom-grid">
             <div class="form-card">
                 <div class="card-title" id="form-title">FORM GUIDE <span style="color:rgba(148,163,184,0.4);font-weight:400">(5 นัดล่าสุด)</span></div>
