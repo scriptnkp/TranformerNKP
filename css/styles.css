@@ -94,7 +94,7 @@ body, #app {
     margin: 0 2px;
 }
 
-/* Layout Grid */
+/* Layout Grid (PC Desktop Default) */
 .grid-top {
     display: grid;
     grid-template-columns: 1fr 220px;
@@ -698,9 +698,103 @@ body, #app {
     margin-bottom: 4px;
 }
 
-/* Responsive Viewports */
-@media(max-width: 600px) {
-    .grid-top { grid-template-columns: 1fr; }
-    .bottom-grid { grid-template-columns: 1fr; }
-    .hdr-title { font-size: 1.6rem; }
+
+/* ==========================================================================
+   Responsive Breakpoints (PC, iPad, Mobile) 
+   ========================================================================== */
+
+/* 1. สำหรับหน้าจอคอมพิวเตอร์ขนาดใหญ่ (PC / Desktop Wide) */
+@media (min-width: 1400px) {
+    #app {
+        max-width: 1320px;
+        margin: 0 auto;
+    }
+}
+
+/* 2. สำหรับแท็บเล็ตและไอแพด (iPad Portrait & Landscape) - ความกว้างไม่เกิน 1024px */
+@media (max-width: 1024px) {
+    .grid-top {
+        grid-template-columns: 1fr; /* ยุบตารางบอลลงมาแถวเดียว เพื่อเพิ่มพื้นที่อ่านข้อมูลบนไอแพด */
+    }
+    .right-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* จัดการ์ดเสริมขวาเรียงซ้าย-ขวาคู่กันแทนแนวตั้ง */
+        gap: 1rem;
+    }
+    .tactical-card {
+        grid-column: span 2; /* การ์ดสนามแทคติกขยายตัวเต็มแถว */
+    }
+    .bottom-grid {
+        grid-template-columns: 1fr 1fr; /* ยุบกล่องสถิติด้านล่างเหลือ 2 คอลัมน์ */
+    }
+    .league-card {
+        grid-column: span 2; /* กล่อง League Breakdown ขยายเต็มแถวล่างสุด */
+    }
+}
+
+/* 3. สำหรับหน้าจอมือถือขนาดใหญ่และแท็บเล็ตหน้าจอเล็ก - ความกว้างไม่เกิน 768px */
+@media (max-width: 768px) {
+    .hdr {
+        padding: 1rem;
+    }
+    .hdr-title {
+        font-size: 1.8rem;
+    }
+    .right-col {
+        grid-template-columns: 1fr; /* ยุบการ์ดทั้งหมดกลับเป็น 1 คอลัมน์แนวตั้ง */
+    }
+    .tactical-card, .league-card {
+        grid-column: span 1;
+    }
+    .bottom-grid {
+        grid-template-columns: 1fr; /* ยุบกล่องสรุปด้านล่างเป็นแนวตั้งแถวเดียวเดี่ยวๆ */
+    }
+}
+
+/* 4. สำหรับหน้าจอมือถือทั่วไป (iPhone/Android) - ความกว้างไม่เกิน 480px */
+@media (max-width: 480px) {
+    #app {
+        padding: 0 0.35rem 1rem; /* ลดระยะขอบข้างลง เพื่อใช้สเปซให้คุ้มค่าที่สุด */
+    }
+    .hdr-title {
+        font-size: 1.6rem;
+    }
+    .hdr-sub {
+        font-size: 0.72rem;
+    }
+    .hdr-flow {
+        display: none; /* ซ่อนแผนผังการไหลของระบบบนมือถือเพื่อลดความหนาแน่นหน้าจอ */
+    }
+    .filter-row {
+        padding: 0.5rem;
+        gap: 4px;
+    }
+    .filter-btn {
+        padding: 3px 6px;
+        font-size: 0.68rem;
+    }
+    .search-box {
+        width: 100%; /* ช่องค้นหาขยายเต็มแถวบนมือถือ เพื่อให้กดพิมพ์ได้ถนัด */
+        margin-top: 4px;
+    }
+    .match-table th, .match-row td {
+        padding: 6px 4px; /* กระชับตารางบอลไม่ให้ล้นขอบจอ */
+    }
+    .team-name {
+        font-size: 0.75rem;
+    }
+    .score-ring {
+        width: 36px;
+        height: 36px;
+    }
+    .score-num {
+        font-size: 0.95rem;
+    }
+    .score-label {
+        font-size: 0.5rem;
+    }
+    .status-badge {
+        padding: 2px 5px;
+        font-size: 0.6rem;
+    }
 }
