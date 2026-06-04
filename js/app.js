@@ -1,6 +1,6 @@
 /**
  * AI Football Prediction Scanner - Core Application Logic
- * Version: 4.0 (Unified Premium Stacked Layout with High-Fidelity SVG Pitch)
+ * Version: 4.1 (Fixed ReferenceError & Seamless Fallback Activation)
  */
 
 // --- 1. API CONFIGURATION ---
@@ -10,7 +10,7 @@ const BSD_API_CONFIG = {
     ENABLE_REAL_API: true                                
 };
 
-// --- OFFICIAL LOGOS & METADATA (ฐานข้อมูลโลโก้แท้สากลความละเอียดสูง) ---
+// --- OFFICIAL LOGOS & METADATA ---
 const LOGOS = {
     'เชลซี': 'https://upload.wikimedia.org/wikipedia/en/cc/cc/Chelsea_FC.svg',
     'นิวคาสเซิล': 'https://upload.wikimedia.org/wikipedia/en/5/56/Newcastle_United_FC_logo.svg',
@@ -60,7 +60,7 @@ class FootballAPIService {
             const rawData = await response.json();
             return this.mapAndAnalyzeData(rawData.data || rawData);
         } catch (error) {
-            console.warn("⚠️ API Connection Warning, rendering simulation core:", error);
+            console.warn("⚠️ Switching to Fallback Simulation Engine:", error);
             return this.executeFallbackProcess();
         }
     }
@@ -117,6 +117,13 @@ function selectMatch(match) {
     renderDynamicFormGuide(match);
     updateMatchProbabilityDonut(match);
     updateMatchTrendChart(match);
+}
+
+// [ADDED] เพิ่มฟังก์ชันสถานะป้ายชื่อสีที่ตกหล่นไปเพื่อแก้ไขอาการค้างตัวแดงบนหน้าแดชบอร์ด
+function getStatus(score) {
+    if (score >= 70) return { cls: 'status-active', label: 'ACTIVE', dot: true };
+    if (score >= 40) return { cls: 'status-watch', label: 'WATCHLIST', dot: false };
+    return { cls: 'status-reject', label: 'REJECTED', dot: false };
 }
 
 function updateMatchProbabilityDonut(match) {
@@ -201,31 +208,26 @@ function updateMatchTrendChart(match) {
 }
 
 // --- 5. PREMIUM HORIZONTAL SVG PITCH CORE ---
-/**
- * วาดภาพสนามหญ้าแนวนอนผืนเดียวร่วมกัน (Horizontal Unified Pitch SVG) ตรงตามต้นแบบตัวอย่าง
- */
 function renderPremiumPitchSVG(match) {
     if (!match || !match.formations) return;
     
     document.getElementById('tactical-title').innerHTML = `TACTICAL MATCHUP: <span style="color:#3b82f6">${match.home}</span> vs <span style="color:#ef4444">${match.away}</span>`;
     
-    // พิกัดผู้เล่นเหย้าทางซ้าย (Home Dots)
-    let homeDots = `<circle cx="10" cy="50" r="3.5" fill="#3b82f6"/>`; // GK
+    let homeDots = `<circle cx="10" cy="50" r="3.5" fill="#3b82f6"/>`; 
     if (match.formations.home === '4-3-3') {
         homeDots += `<circle cx="28" cy="18" r="3" fill="#3b82f6"/><circle cx="25" cy="40" r="3" fill="#3b82f6"/><circle cx="25" cy="60" r="3" fill="#3b82f6"/><circle cx="28" cy="82" r="3" fill="#3b82f6"/><circle cx="45" cy="25" r="3" fill="#3b82f6"/><circle cx="42" cy="50" r="3" fill="#3b82f6"/><circle cx="45" cy="75" r="3" fill="#3b82f6"/><circle cx="68" cy="20" r="3" fill="#3b82f6"/><circle cx="72" cy="50" r="3" fill="#3b82f6"/><circle cx="68" cy="80" r="3" fill="#3b82f6"/>`;
     } else if (match.formations.home === '3-5-2') {
         homeDots += `<circle cx="25" cy="25" r="3" fill="#3b82f6"/><circle cx="23" cy="50" r="3" fill="#3b82f6"/><circle cx="25" cy="75" r="3" fill="#3b82f6"/><circle cx="44" cy="15" r="3" fill="#3b82f6"/><circle cx="42" cy="33" r="3" fill="#3b82f6"/><circle cx="40" cy="50" r="3" fill="#3b82f6"/><circle cx="42" cy="67" r="3" fill="#3b82f6"/><circle cx="44" cy="85" r="3" fill="#3b82f6"/><circle cx="68" cy="35" r="3" fill="#3b82f6"/><circle cx="68" cy="65" r="3" fill="#3b82f6"/>`;
-    } else { // 4-2-3-1
+    } else { 
         homeDots += `<circle cx="28" cy="18" r="3" fill="#3b82f6"/><circle cx="25" cy="40" r="3" fill="#3b82f6"/><circle cx="25" cy="60" r="3" fill="#3b82f6"/><circle cx="28" cy="82" r="3" fill="#3b82f6"/><circle cx="42" cy="35" r="3" fill="#3b82f6"/><circle cx="42" cy="65" r="3" fill="#3b82f6"/><circle cx="58" cy="22" r="3" fill="#3b82f6"/><circle cx="60" cy="50" r="3" fill="#3b82f6"/><circle cx="58" cy="78" r="3" fill="#3b82f6"/><circle cx="72" cy="50" r="3" fill="#3b82f6"/>`;
     }
 
-    // พิกัดผู้เล่นเยือนทางขวา (Away Dots)
-    let awayDots = `<circle cx="190" cy="50" r="3.5" fill="#ef4444"/>`; // GK
+    let awayDots = `<circle cx="190" cy="50" r="3.5" fill="#ef4444"/>`; 
     if (match.formations.away === '4-3-3') {
         awayDots += `<circle cx="172" cy="18" r="3" fill="#ef4444"/><circle cx="175" cy="40" r="3" fill="#ef4444"/><circle cx="175" cy="60" r="3" fill="#ef4444"/><circle cx="172" cy="82" r="3" fill="#ef4444"/><circle cx="155" cy="25" r="3" fill="#ef4444"/><circle cx="158" cy="50" r="3" fill="#ef4444"/><circle cx="155" cy="75" r="3" fill="#ef4444"/><circle cx="132" cy="20" r="3" fill="#ef4444"/><circle cx="128" cy="50" r="3" fill="#ef4444"/><circle cx="132" cy="80" r="3" fill="#ef4444"/>`;
     } else if (match.formations.away === '4-4-2') {
         awayDots += `<circle cx="172" cy="18" r="3" fill="#ef4444"/><circle cx="175" cy="40" r="3" fill="#ef4444"/><circle cx="175" cy="60" r="3" fill="#ef4444"/><circle cx="172" cy="82" r="3" fill="#ef4444"/><circle cx="150" cy="18" r="3" fill="#ef4444"/><circle cx="152" cy="40" r="3" fill="#ef4444"/><circle cx="152" cy="60" r="3" fill="#ef4444"/><circle cx="150" cy="82" r="3" fill="#ef4444"/><circle cx="128" cy="35" r="3" fill="#ef4444"/><circle cx="128" cy="65" r="3" fill="#ef4444"/>`;
-    } else { // 4-2-3-1
+    } else { 
         awayDots += `<circle cx="172" cy="18" r="3" fill="#ef4444"/><circle cx="175" cy="40" r="3" fill="#ef4444"/><circle cx="175" cy="60" r="3" fill="#ef4444"/><circle cx="172" cy="82" r="3" fill="#ef4444"/><circle cx="158" cy="35" r="3" fill="#ef4444"/><circle cx="158" cy="65" r="3" fill="#ef4444"/><circle cx="142" cy="22" r="3" fill="#ef4444"/><circle cx="140" cy="50" r="3" fill="#ef4444"/><circle cx="142" cy="78" r="3" fill="#ef4444"/><circle cx="128" cy="50" r="3" fill="#ef4444"/>`;
     }
 
@@ -243,8 +245,7 @@ function renderPremiumPitchSVG(match) {
                 <rect x="2" y="36" width="7" height="28" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
                 <rect x="176" y="22" width="22" height="56" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
                 <rect x="191" y="36" width="7" height="28" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
-                ${homeDots}
-                ${awayDots}
+                ${homeDots} ${awayDots}
             </svg>
         </div>
     `;
@@ -269,7 +270,6 @@ function renderMatches() {
         return;
     }
 
-    // เรนเดอร์โครงสร้างตารางแถวซ้อนแนวตั้ง (Vertical Stack) และเรียกรูปโลโก้แท้จากอาร์เรย์
     tbody.innerHTML = data.map(m => {
         const st = getStatus(m.score);
         const dotHtml = st.dot ? `<div class="dot-blink"></div>` : '';
