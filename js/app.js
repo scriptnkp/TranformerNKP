@@ -1,6 +1,6 @@
 /**
  * AI Football Prediction Scanner - Core Application Logic
- * Version: 4.2 (Stable Logo CDN & Unified Layout)
+ * Version: 4.4 (Dynamic Time Formatter & Today's Match Filter)
  */
 
 // --- 1. API CONFIGURATION ---
@@ -10,7 +10,7 @@ const BSD_API_CONFIG = {
     ENABLE_REAL_API: true                                
 };
 
-// --- STABLE LOGOS CDN (อัปเดตลิงก์โลโก้ใหม่ที่เสถียร 100%) ---
+// --- STABLE LOGOS CDN ---
 const LOGOS = {
     'เชลซี': 'https://crests.football-data.org/61.png',
     'นิวคาสเซิล': 'https://crests.football-data.org/67.png',
@@ -27,19 +27,23 @@ const LOGOS = {
     'อาร์เซนอล': 'https://crests.football-data.org/57.png',
     'แมนซิตี้': 'https://crests.football-data.org/65.png',
     'ลิเวอร์พูล': 'https://crests.football-data.org/64.png',
-    'แมนยู': 'https://crests.football-data.org/66.png'
+    'แมนยู': 'https://crests.football-data.org/66.png',
+    'ยูเวนตุส': 'https://crests.football-data.org/109.png',
+    'เรอัล มาดริด': 'https://crests.football-data.org/86.png',
+    'เปแอสเช': 'https://crests.football-data.org/524.png',
+    'บาเยิร์น': 'https://crests.football-data.org/5.png'
 };
 
-const FLAG = {'ENG PR':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','GER BL':'🇩🇪','SPA LA':'🇪🇸','ITA SA':'🇮🇹','FRA LI':'🇫🇷','POR LP':'🇵🇹'};
-const LEAGUE_FULL = {'ENG PR':'Premier League','GER BL':'Bundesliga','SPA LA':'La Liga','ITA SA':'Serie A','FRA LI':'Ligue 1','POR LP':'Primeira Liga'};
+const FLAG = {'ENG PR':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','GER BL':'🇩🇪','SPA LA':'🇪🇸','ITA SA':'🇮🇹','FRA LI':'🇫🇷','POR LP':'🇵🇹', 'UEFA CL':'🇪🇺'};
+const LEAGUE_FULL = {'ENG PR':'Premier League','GER BL':'Bundesliga','SPA LA':'La Liga','ITA SA':'Serie A','FRA LI':'Ligue 1','POR LP':'Primeira Liga', 'UEFA CL':'Champions League'};
 
 const MATCHES_BASE = [
-    {time:'18:30',home:'เชลซี',away:'นิวคาสเซิล',league:'ENG PR',score:78,odds:{h:1.85,d:3.4,a:4.2},openingOdds:{h:2.10,d:3.3,a:3.8},motivationFactor:1.2,injury:'ไม่มีรายงานตัวเจ็บเพิ่ม',h2h:'เชลซี 3W-1D-1L',form:{h:['W','W','D','W','W'],a:['W','L','D','W','W']},formations:{home:'4-2-3-1',away:'4-3-3'}},
-    {time:'19:00',home:'ดอร์ทมุนด์',away:'ไลป์ซิก',league:'GER BL',score:72,odds:{h:2.1,d:3.2,a:3.6},openingOdds:{h:2.15,d:3.2,a:3.5},motivationFactor:1.0,injury:'',h2h:'ดอร์ทมุนด์ 2W-2D-1L',form:{h:['W','D','W','L','W'],a:['W','W','L','D','W']},formations:{home:'4-4-2',away:'4-3-3'}},
-    {time:'20:00',home:'บาร์เซโลน่า',away:'เรอัล โซเซียดัด',league:'SPA LA',score:65,odds:{h:1.6,d:3.8,a:5.5},openingOdds:{h:1.62,d:3.7,a:5.4},motivationFactor:1.1,injury:'เปโดร (แขวน)',h2h:'บาร์ซา 4W-0D-1L',form:{h:['W','W','W','D','W'],a:['D','W','L','W','D']},formations:{home:'4-3-3',away:'4-2-3-1'}},
-    {time:'20:30',home:'เอซี มิลาน',away:'อตาลันต้า',league:'ITA SA',score:58,odds:{h:2.3,d:3.1,a:3.2},openingOdds:{h:2.20,d:3.2,a:3.4},motivationFactor:1.0,injury:'ลีโอ (พัก)',h2h:'มิลาน 2W-1D-2L',form:{h:['W','L','D','W','L'],a:['W','W','D','W','L']},formations:{home:'4-2-3-1',away:'3-5-2'}},
-    {time:'21:00',home:'ลีออง',away:'มาร์กเซย',league:'FRA LI',score:45,odds:{h:2.8,d:3.0,a:2.6},openingOdds:{h:2.60,d:3.1,a:2.8},motivationFactor:0.9,injury:'',h2h:'เสมอกัน 2W-3D-2L',form:{h:['D','W','L','D','W'],a:['L','W','D','L','W']},formations:{home:'4-4-2',away:'4-4-2'}},
-    {time:'22:00',home:'เบนฟิก้า',away:'ปอร์โต',league:'POR LP',score:61,odds:{h:2.0,d:3.3,a:3.8},openingOdds:{h:2.30,d:3.2,a:3.2},motivationFactor:1.3,injury:'',h2h:'เบนฟิก้า 3W-1D-2L',form:{h:['W','D','W','W','D'],a:['W','L','W','D','W']},formations:{home:'3-5-2',away:'4-3-3'}}
+    {time:'18:30',home:'เรอัล มาดริด',away:'ยูเวนตุส',league:'UEFA CL',score:85,odds:{h:1.75,d:3.6,a:4.5},openingOdds:{h:1.80,d:3.5,a:4.2},motivationFactor:1.3,injury:'ไม่มีรายงานตัวเจ็บเพิ่ม',h2h:'มาดริด 2W-2D-1L',form:{h:['W','W','D','W','W'],a:['W','D','D','W','W']},formations:{home:'4-3-3',away:'3-5-2'}},
+    {time:'19:00',home:'เปแอสเช',away:'บาเยิร์น',league:'UEFA CL',score:88,odds:{h:2.4,d:3.3,a:2.8},openingOdds:{h:2.60,d:3.2,a:2.6},motivationFactor:1.2,injury:'เปแอสเช (รอเช็กฟิต)',h2h:'บาเยิร์น 3W-1D-1L',form:{h:['W','W','L','W','W'],a:['W','W','W','D','W']},formations:{home:'4-3-3',away:'4-2-3-1'}},
+    {time:'20:00',home:'เชลซี',away:'นิวคาสเซิล',league:'ENG PR',score:78,odds:{h:1.85,d:3.4,a:4.2},openingOdds:{h:2.10,d:3.3,a:3.8},motivationFactor:1.2,injury:'ไม่มีรายงานตัวเจ็บเพิ่ม',h2h:'เชลซี 3W-1D-1L',form:{h:['W','W','D','W','W'],a:['W','L','D','W','W']},formations:{home:'4-2-3-1',away:'4-3-3'}},
+    {time:'20:30',home:'บาร์เซโลน่า',away:'เรอัล โซเซียดัด',league:'SPA LA',score:65,odds:{h:1.6,d:3.8,a:5.5},openingOdds:{h:1.62,d:3.7,a:5.4},motivationFactor:1.1,injury:'เปโดร (แขวน)',h2h:'บาร์ซา 4W-0D-1L',form:{h:['W','W','W','D','W'],a:['D','W','L','W','D']},formations:{home:'4-3-3',away:'4-2-3-1'}},
+    {time:'21:00',home:'ดอร์ทมุนด์',away:'ไลป์ซิก',league:'GER BL',score:72,odds:{h:2.1,d:3.2,a:3.6},openingOdds:{h:2.15,d:3.2,a:3.5},motivationFactor:1.0,injury:'',h2h:'ดอร์ทมุนด์ 2W-2D-1L',form:{h:['W','D','W','L','W'],a:['W','W','L','D','W']},formations:{home:'4-4-2',away:'4-3-3'}},
+    {time:'22:00',home:'เอซี มิลาน',away:'อตาลันต้า',league:'ITA SA',score:58,odds:{h:2.3,d:3.1,a:3.2},openingOdds:{h:2.20,d:3.2,a:3.4},motivationFactor:1.0,injury:'ลีโอ (พัก)',h2h:'มิลาน 2W-1D-2L',form:{h:['W','L','D','W','L'],a:['W','W','D','W','L']},formations:{home:'4-2-3-1',away:'3-5-2'}}
 ];
 
 // --- 2. SERVICE LAYER ---
@@ -60,7 +64,7 @@ class FootballAPIService {
             const rawData = await response.json();
             return this.mapAndAnalyzeData(rawData.data || rawData);
         } catch (error) {
-            console.warn("⚠️ API Domain Not Found. Switching to Fallback Simulation Engine.");
+            console.warn("⚠️ API Unavailable. Engaging Advanced Simulation Engine.");
             return this.executeFallbackProcess();
         }
     }
@@ -78,8 +82,8 @@ class FootballAPIService {
             finalAIScore = Math.max(10, Math.min(99, Math.round(finalAIScore)));
 
             const fallbackFormations = [
-                {home:'4-2-3-1', away:'4-3-3'}, {home:'4-4-2', away:'4-3-3'},
-                {home:'4-3-3', away:'4-2-3-1'}, {home:'4-2-3-1', away:'3-5-2'}
+                {home:'4-3-3', away:'3-5-2'}, {home:'4-2-3-1', away:'4-3-3'},
+                {home:'4-4-2', away:'4-3-3'}, {home:'4-3-3', away:'4-2-3-1'}
             ];
 
             return {
@@ -88,7 +92,7 @@ class FootballAPIService {
                 odds: m.odds || {h:1.8, d:3.2, a:4.0},
                 openingOdds: m.openingOdds || m.odds || {h:1.9, d:3.2, a:3.8},
                 injury: m.injury || 'ไม่มีตัวเจ็บเพิ่มเติม',
-                h2h: m.h2h || 'พบกันล่าสุดสูสีเบียดกันมาตลอด',
+                h2h: m.h2h || 'สูสีเบียดกันมาตลอด',
                 form: m.form || {h:['W','D','W','L','W'], a:['W','L','D','W','D']},
                 formations: m.formations || fallbackFormations[idx % fallbackFormations.length],
                 oddsDropAlert: oddsDropPercent > 7
@@ -123,6 +127,25 @@ function getStatus(score) {
     if (score >= 70) return { cls: 'status-active', label: 'ACTIVE', dot: true };
     if (score >= 40) return { cls: 'status-watch', label: 'WATCHLIST', dot: false };
     return { cls: 'status-reject', label: 'REJECTED', dot: false };
+}
+
+// [ADDED] ฟังก์ชันตัวช่วยแปลงเวลาและระบุป้าย "วันนี้"
+function formatTimeDisplay(timeStr) {
+    let formattedTime = timeStr;
+    const d = new Date(timeStr);
+    
+    // หากเป็นข้อมูลจาก API จริง (รูปแบบ ISO Timestamp)
+    if (!isNaN(d.getTime()) && timeStr.toString().includes('-')) {
+        const h = d.getHours().toString().padStart(2, '0');
+        const min = d.getMinutes().toString().padStart(2, '0');
+        formattedTime = `${h}:${min}`;
+    }
+    
+    // คืนค่าเป็น HTML ที่จัดสไตล์ตัวอักษรแล้ว
+    return `
+        <div style="font-size:0.68rem; color:#3b82f6; font-weight:700; letter-spacing:0.5px; margin-bottom:2px;">วันนี้</div>
+        <div style="font-size:0.85rem; font-family:'Teko', sans-serif; font-weight:500; letter-spacing:0.5px;">${formattedTime}</div>
+    `;
 }
 
 function updateMatchProbabilityDonut(match) {
@@ -209,7 +232,6 @@ function updateMatchTrendChart(match) {
 // --- 5. PREMIUM HORIZONTAL SVG PITCH CORE ---
 function renderPremiumPitchSVG(match) {
     if (!match || !match.formations) return;
-    
     document.getElementById('tactical-title').innerHTML = `TACTICAL MATCHUP: <span style="color:#3b82f6">${match.home}</span> vs <span style="color:#ef4444">${match.away}</span>`;
     
     let homeDots = `<circle cx="10" cy="50" r="3.5" fill="#3b82f6"/>`; 
@@ -278,8 +300,11 @@ function renderMatches() {
         const homeLogoUrl = LOGOS[m.home] || '';
         const awayLogoUrl = LOGOS[m.away] || '';
 
+        // เรียกใช้ฟังก์ชัน formatTimeDisplay() เพื่อแสดง "วันนี้" ด้านบนเวลา
         return `<tr class="match-row" data-index="${allMatches.indexOf(m)}">
-            <td class="time-cell">${m.time}</td>
+            <td class="time-cell" style="text-align:center; vertical-align:middle;">
+                ${formatTimeDisplay(m.time)}
+            </td>
             <td>
                 <div class="match-cell-container">
                     <div class="match-logos-stack">
@@ -308,7 +333,7 @@ function renderLeagueBreakdown(data) {
     data.forEach(m => { counts[m.league] = (counts[m.league] || 0) + 1; });
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const max = sorted[0]?.[1] || 1;
-    const BAR_COLORS = { 'ENG PR': '#3b82f6', 'GER BL': '#f59e0b', 'SPA LA': '#ef4444', 'ITA SA': '#10b981', 'FRA LI': '#8b5cf6', 'POR LP': '#ec4899' };
+    const BAR_COLORS = { 'ENG PR': '#3b82f6', 'GER BL': '#f59e0b', 'SPA LA': '#ef4444', 'ITA SA': '#10b981', 'FRA LI': '#8b5cf6', 'POR LP': '#ec4899', 'UEFA CL': '#d946ef' };
     
     document.getElementById('league-list').innerHTML = sorted.map(([lg, ct]) =>
         `<div class="league-item">

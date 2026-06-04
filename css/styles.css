@@ -17,6 +17,8 @@ body {
     color: var(--text-primary);
     font-family: 'Sarabun', sans-serif;
     padding: 1rem;
+    min-height: 100vh;
+    overflow-x: hidden; /* ป้องกันหน้าจอเลื่อนซ้าย-ขวาบนมือถือ */
 }
 
 .sr-only {
@@ -145,7 +147,6 @@ body {
 .match-row:hover { background: rgba(59, 130, 246, 0.03); }
 .match-row td { padding: 12px 10px; vertical-align: middle; }
 
-/* โครงสร้างคอนเทนเนอร์จัดเรียงแถวแนวตั้ง (Vertical Stack) ตรงตามต้นแบบ */
 .match-cell-container { display: flex; align-items: center; gap: 14px; }
 .match-logos-stack { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 22px; }
 .team-logo-img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
@@ -195,7 +196,6 @@ body {
 .factor-bar { height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; overflow: hidden; }
 .factor-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
 
-/* แผงสนามหญ้าแนวนอนระดับพรีเมียม */
 .tactical-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: 1rem; }
 .pitch-layout { width: 100%; background: #0c1c12; border: 1px solid rgba(34,197,94,0.15); border-radius: 6px; padding: 8px; box-shadow: inset 0 0 20px rgba(0,0,0,0.6); }
 .pitch-header-label { display: flex; justify-content: space-between; font-size: 0.65rem; color: rgba(148,163,184,0.6); margin-bottom: 6px; font-weight: 500; }
@@ -230,25 +230,53 @@ body {
 .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
 .disclaimer { font-size: 0.6rem; color: rgba(148, 163, 184, 0.3); padding: 0 1rem 0.6rem; font-style: italic; }
 
-/* Viewport Responsiveness */
+
+/* ==========================================================================
+   Responsive Rules (แก้ปัญหาหน้าจอโดนตัดบน iPad/Mobile แบบสมบูรณ์)
+   ========================================================================== */
+
+/* สำหรับ iPad และแท็บเล็ต (กว้างไม่เกิน 1024px) */
 @media (max-width: 1024px) {
-    .grid-top { grid-template-columns: 1fr; }
-    .right-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    /* นำกล่องทางขวา (Right Col) เลื่อนลงมาต่อท้ายตารางบอล */
+    .grid-top { 
+        grid-template-columns: 1fr; 
+    }
+    /* ให้กล่องด้านล่างแบ่งครึ่งซ้าย-ขวาอย่างสมดุล */
+    .right-col { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 1rem; 
+    }
     .tactical-card { grid-column: span 2; }
-    .bottom-grid { grid-template-columns: 1fr 1fr; }
+    .bottom-grid { 
+        grid-template-columns: 1fr 1fr; 
+    }
     .league-card { grid-column: span 2; }
 }
 
+/* สำหรับมือถือขนาดกลาง (กว้างไม่เกิน 768px) */
 @media (max-width: 768px) {
-    .right-col { grid-template-columns: 1fr; }
-    .tactical-card { grid-column: span 1; }
-    .bottom-grid { grid-template-columns: 1fr; }
-    .league-card { grid-column: span 1; }
+    /* ยุบทุกส่วนให้เรียงลงมาเป็นแถวเดียวแนวดิ่ง 100% ไม่ให้มีอะไรซ้อนกัน */
+    .right-col { 
+        grid-template-columns: 1fr; 
+    }
+    .tactical-card { grid-column: 1; }
+    .bottom-grid { 
+        grid-template-columns: 1fr; 
+    }
+    .league-card { grid-column: 1; }
 }
 
+/* สำหรับหน้าจอมือถือขนาดเล็ก (iPhone/Android ทั่วไป) */
 @media (max-width: 480px) {
-    body { padding: 0.4rem; }
+    body { padding: 0.5rem; }
     .hdr-flow { display: none; }
-    .match-table th, .match-row td { padding: 8px 4px; }
+    
+    /* อนุญาตให้ตารางบอลสามารถเลื่อนสไลด์ซ้ายขวาได้ เพื่อไม่ให้ดันโครงสร้างพัง */
+    .scanner-card > div[style*="overflow-x:auto"] {
+        width: 100%;
+        overflow-x: auto;
+    }
+    .match-table th, .match-row td { padding: 8px 6px; }
     .search-box { width: 100%; margin-top: 4px; }
 }
