@@ -1,12 +1,12 @@
 /**
  * AI Football Prediction Scanner - Core Application Logic
- * Version: 7.0 (Official API-Football Key Activated)
+ * Version: 7.1 (Fixed ReferenceError: buildScoreRing)
  */
 
-// --- 1. API CONFIGURATION (ฝัง API Key ของคุณเรียบร้อยแล้ว) ---
+// --- 1. API CONFIGURATION (API-FOOTBALL) ---
 const API_FOOTBALL_CONFIG = {
     BASE_URL: 'https://v3.football.api-sports.io',
-    API_KEY: '8d7bd5b4e39d67ac804b96a08eac5723', // คีย์ของคุณพร้อมใช้งาน
+    API_KEY: '8d7bd5b4e39d67ac804b96a08eac5723', // คีย์ของคุณ
     ENABLE_REAL_API: true
 };
 
@@ -271,11 +271,9 @@ function updateMatchProbabilityDonut(match) {
     document.getElementById('dist-title').innerHTML = `PROBABILITY MAP <span style="float:right; color:#4ade80; background:rgba(74,222,128,0.15); padding:1px 6px; border-radius:4px; font-weight:700;">🎯 ${match.predictedScore}</span>`;
     document.getElementById('total-matches').textContent = match.score;
     document.getElementById('dist-center-label').textContent = 'AI SCORE';
-    
     document.getElementById('dist-lbl-1').innerHTML = `<div class="dist-dot" style="background:#4ade80"></div>ชนะฝั่งเจ้าบ้าน`;
     document.getElementById('dist-lbl-2').innerHTML = `<div class="dist-dot" style="background:#fbbf24"></div>โอกาสผลเสมอ`;
     document.getElementById('dist-lbl-3').innerHTML = `<div class="dist-dot" style="background:#f87171"></div>ชนะฝั่งทีมเยือน`;
-    
     document.getElementById('pct-high').textContent = hPct + '%';
     document.getElementById('pct-med').textContent = dPct + '%';
     document.getElementById('pct-low').textContent = aPct + '%';
@@ -331,9 +329,22 @@ function renderPremiumPitchSVG(match) {
     document.getElementById('tactical-title').innerHTML = `TACTICAL MATCHUP: <span style="color:#3b82f6">${match.home}</span> vs <span style="color:#ef4444">${match.away}</span>`;
     
     let homeDots = `<circle cx="10" cy="50" r="3.5" fill="#3b82f6"/>`; 
-    homeDots += `<circle cx="28" cy="18" r="3" fill="#3b82f6"/><circle cx="25" cy="40" r="3" fill="#3b82f6"/><circle cx="25" cy="60" r="3" fill="#3b82f6"/><circle cx="28" cy="82" r="3" fill="#3b82f6"/><circle cx="45" cy="25" r="3" fill="#3b82f6"/><circle cx="42" cy="50" r="3" fill="#3b82f6"/><circle cx="45" cy="75" r="3" fill="#3b82f6"/><circle cx="68" cy="20" r="3" fill="#3b82f6"/><circle cx="72" cy="50" r="3" fill="#3b82f6"/><circle cx="68" cy="80" r="3" fill="#3b82f6"/>`;
+    if (match.formations.home === '4-3-3') {
+        homeDots += `<circle cx="28" cy="18" r="3" fill="#3b82f6"/><circle cx="25" cy="40" r="3" fill="#3b82f6"/><circle cx="25" cy="60" r="3" fill="#3b82f6"/><circle cx="28" cy="82" r="3" fill="#3b82f6"/><circle cx="45" cy="25" r="3" fill="#3b82f6"/><circle cx="42" cy="50" r="3" fill="#3b82f6"/><circle cx="45" cy="75" r="3" fill="#3b82f6"/><circle cx="68" cy="20" r="3" fill="#3b82f6"/><circle cx="72" cy="50" r="3" fill="#3b82f6"/><circle cx="68" cy="80" r="3" fill="#3b82f6"/>`;
+    } else if (match.formations.home === '3-5-2') {
+        homeDots += `<circle cx="25" cy="25" r="3" fill="#3b82f6"/><circle cx="23" cy="50" r="3" fill="#3b82f6"/><circle cx="25" cy="75" r="3" fill="#3b82f6"/><circle cx="44" cy="15" r="3" fill="#3b82f6"/><circle cx="42" cy="33" r="3" fill="#3b82f6"/><circle cx="40" cy="50" r="3" fill="#3b82f6"/><circle cx="42" cy="67" r="3" fill="#3b82f6"/><circle cx="44" cy="85" r="3" fill="#3b82f6"/><circle cx="68" cy="35" r="3" fill="#3b82f6"/><circle cx="68" cy="65" r="3" fill="#3b82f6"/>`;
+    } else { 
+        homeDots += `<circle cx="28" cy="18" r="3" fill="#3b82f6"/><circle cx="25" cy="40" r="3" fill="#3b82f6"/><circle cx="25" cy="60" r="3" fill="#3b82f6"/><circle cx="28" cy="82" r="3" fill="#3b82f6"/><circle cx="42" cy="35" r="3" fill="#3b82f6"/><circle cx="42" cy="65" r="3" fill="#3b82f6"/><circle cx="58" cy="22" r="3" fill="#3b82f6"/><circle cx="60" cy="50" r="3" fill="#3b82f6"/><circle cx="58" cy="78" r="3" fill="#3b82f6"/><circle cx="72" cy="50" r="3" fill="#3b82f6"/>`;
+    }
+
     let awayDots = `<circle cx="190" cy="50" r="3.5" fill="#ef4444"/>`; 
-    awayDots += `<circle cx="172" cy="18" r="3" fill="#ef4444"/><circle cx="175" cy="40" r="3" fill="#ef4444"/><circle cx="175" cy="60" r="3" fill="#ef4444"/><circle cx="172" cy="82" r="3" fill="#ef4444"/><circle cx="155" cy="25" r="3" fill="#ef4444"/><circle cx="158" cy="50" r="3" fill="#ef4444"/><circle cx="155" cy="75" r="3" fill="#ef4444"/><circle cx="132" cy="20" r="3" fill="#ef4444"/><circle cx="128" cy="50" r="3" fill="#ef4444"/><circle cx="132" cy="80" r="3" fill="#ef4444"/>`;
+    if (match.formations.away === '4-3-3') {
+        awayDots += `<circle cx="172" cy="18" r="3" fill="#ef4444"/><circle cx="175" cy="40" r="3" fill="#ef4444"/><circle cx="175" cy="60" r="3" fill="#ef4444"/><circle cx="172" cy="82" r="3" fill="#ef4444"/><circle cx="155" cy="25" r="3" fill="#ef4444"/><circle cx="158" cy="50" r="3" fill="#ef4444"/><circle cx="155" cy="75" r="3" fill="#ef4444"/><circle cx="132" cy="20" r="3" fill="#ef4444"/><circle cx="128" cy="50" r="3" fill="#ef4444"/><circle cx="132" cy="80" r="3" fill="#ef4444"/>`;
+    } else if (match.formations.away === '4-4-2') {
+        awayDots += `<circle cx="172" cy="18" r="3" fill="#ef4444"/><circle cx="175" cy="40" r="3" fill="#ef4444"/><circle cx="175" cy="60" r="3" fill="#ef4444"/><circle cx="172" cy="82" r="3" fill="#ef4444"/><circle cx="150" cy="18" r="3" fill="#ef4444"/><circle cx="152" cy="40" r="3" fill="#ef4444"/><circle cx="152" cy="60" r="3" fill="#ef4444"/><circle cx="150" cy="82" r="3" fill="#ef4444"/><circle cx="128" cy="35" r="3" fill="#ef4444"/><circle cx="128" cy="65" r="3" fill="#ef4444"/>`;
+    } else { 
+        awayDots += `<circle cx="172" cy="18" r="3" fill="#ef4444"/><circle cx="175" cy="40" r="3" fill="#ef4444"/><circle cx="175" cy="60" r="3" fill="#ef4444"/><circle cx="172" cy="82" r="3" fill="#ef4444"/><circle cx="158" cy="35" r="3" fill="#ef4444"/><circle cx="158" cy="65" r="3" fill="#ef4444"/><circle cx="142" cy="22" r="3" fill="#ef4444"/><circle cx="140" cy="50" r="3" fill="#ef4444"/><circle cx="142" cy="78" r="3" fill="#ef4444"/><circle cx="128" cy="50" r="3" fill="#ef4444"/>`;
+    }
 
     document.getElementById('tactical-pitch-container').innerHTML = `
         <div class="pitch-header-label"><div>${match.formations.home}</div><div>${match.formations.away}</div></div>
@@ -350,6 +361,26 @@ function renderPremiumPitchSVG(match) {
             </svg>
         </div>
     `;
+}
+
+// [ADDED] ฟังก์ชันผู้ช่วย: getScoreColor และ buildScoreRing
+function getScoreColor(score) {
+    if (score >= 70) return { stroke: '#4ade80', text: '#4ade80', label: 'HIGH' };
+    if (score >= 40) return { stroke: '#fbbf24', text: '#fbbf24', label: 'MED' };
+    return { stroke: '#f87171', text: '#f87171', label: 'LOW' };
+}
+
+function buildScoreRing(score) {
+    const c = getScoreColor(score);
+    const pct = score / 100; const r = 17; const circ = 2 * Math.PI * r; const dash = pct * circ;
+    return `<svg width="42" height="42" viewBox="0 0 42 42">
+        <circle cx="21" cy="21" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2.5"/>
+        <circle cx="21" cy="21" r="${r}" fill="none" stroke="${c.stroke}" stroke-width="2.5" stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"/>
+    </svg>
+    <div style="text-align:center">
+        <span class="score-num" style="color:${c.text}">${score}</span>
+        <span class="score-label" style="color:${c.text};opacity:0.6">${c.label}</span>
+    </div>`;
 }
 
 function renderMatches() {
