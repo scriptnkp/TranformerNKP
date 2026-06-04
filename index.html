@@ -45,6 +45,7 @@
                         </div>
                     </div>
                     <div class="scanner-meta">
+                        <input type="date" id="date-picker" class="date-picker-box" title="คลิกเพื่อเลือกวันที่">
                         <div class="update-time"><span id="scan-time">อัปเดตล่าสุด --:--</span></div>
                         <button class="filter-btn" id="btn-refresh">รีเฟรช</button>
                     </div>
@@ -62,14 +63,14 @@
                     <button class="filter-btn" data-filter-type="score" data-value="ALL">ทั้งหมด</button>
                     <button class="filter-btn" data-filter-type="score" data-value="HIGH">สูง 70+</button>
                     <button class="filter-btn" data-filter-type="score" data-value="MED">กลาง 40-69</button>
-                    <input class="search-box" type="text" placeholder="🔍 ค้นหาทีม...">
+                    <input class="search-box" type="text" placeholder="🔍 ค้นหาทีม..." id="search-input">
                 </div>
 
                 <div style="overflow-x:auto">
                     <table class="match-table" id="match-table">
                         <thead>
                             <tr>
-                                <th style="width:70px">เวลา</th>
+                                <th style="width:70px; text-align:center;">เวลา</th>
                                 <th>คู่แข่งขัน</th>
                                 <th style="width:90px">ลีก</th>
                                 <th style="text-align:center;width:100px">AI SCORE</th>
@@ -118,8 +119,7 @@
 
                 <div class="tactical-card">
                     <div class="card-title" id="tactical-title">TACTICAL OVERVIEW</div>
-                    <div id="tactical-pitch-container">
-                        </div>
+                    <div id="tactical-pitch-container"></div>
                 </div>
             </div>
         </div>
