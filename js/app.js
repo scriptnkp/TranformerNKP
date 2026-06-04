@@ -1,11 +1,12 @@
 /**
  * AI Football Prediction Scanner - Core Application Logic
- * Version: 4.4 (Dynamic Time Formatter & Today's Match Filter)
+ * Version: 4.6 (V2 API Ready + Logo High-Contrast Fix)
  */
 
 // --- 1. API CONFIGURATION ---
 const BSD_API_CONFIG = {
-    BASE_URL: 'https://api.bzzoiro.com/v1', 
+    // อัปเดตชี้ไปที่เซิร์ฟเวอร์ V2
+    BASE_URL: 'https://api.bzzoiro.com/api/v2', 
     API_KEY: '07f957204727339378ce25dd19c68600bb799a42', 
     ENABLE_REAL_API: true                                
 };
@@ -46,6 +47,9 @@ const MATCHES_BASE = [
     {time:'22:00',home:'เอซี มิลาน',away:'อตาลันต้า',league:'ITA SA',score:58,odds:{h:2.3,d:3.1,a:3.2},openingOdds:{h:2.20,d:3.2,a:3.4},motivationFactor:1.0,injury:'ลีโอ (พัก)',h2h:'มิลาน 2W-1D-2L',form:{h:['W','L','D','W','L'],a:['W','W','D','W','L']},formations:{home:'4-2-3-1',away:'3-5-2'}}
 ];
 
+// --- สไตล์สำหรับไฮไลต์โลโก้ทีม ---
+const LOGO_HIGHLIGHT_STYLE = "background-color: rgba(255, 255, 255, 0.85); border-radius: 50%; padding: 2px; box-shadow: 0 0 5px rgba(255,255,255,0.2);";
+
 // --- 2. SERVICE LAYER ---
 class FootballAPIService {
     static async fetchScannedMatches() {
@@ -53,7 +57,8 @@ class FootballAPIService {
             return this.executeFallbackProcess();
         }
         try {
-            const response = await fetch(`${BSD_API_CONFIG.BASE_URL}/fixtures/live-scan?predictions=true`, {
+            // ยิงไปที่ Endpoint V2
+            const response = await fetch(`${BSD_API_CONFIG.BASE_URL}/events/live/`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${BSD_API_CONFIG.API_KEY}`,
@@ -62,14 +67,19 @@ class FootballAPIService {
             });
             if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
             const rawData = await response.json();
-            return this.mapAndAnalyzeData(rawData.data || rawData);
+            
+            // ดักจับโครงสร้าง V2 หรือ V1 
+            const dataToMap = rawData.events || rawData.data || rawData;
+            return this.mapAndAnalyzeData(dataToMap);
         } catch (error) {
-            console.warn("⚠️ API Unavailable. Engaging Advanced Simulation Engine.");
+            console.warn("⚠️ V2 API connection failed or data mismatch. Engaging Fallback Engine.", error);
             return this.executeFallbackProcess();
         }
     }
 
     static mapAndAnalyzeData(fixtures) {
+        if (!Array.isArray(fixtures)) return [];
+        
         return fixtures.map((m, idx) => {
             let oddsDropPercent = 0;
             if (m.openingOdds && m.odds && m.openingOdds.h) {
@@ -78,8 +88,26 @@ class FootballAPIService {
             let finalAIScore = m.score || 50;
             if (oddsDropPercent > 8) finalAIScore += 5; 
             if (m.motivationFactor) finalAIScore = finalAIScore * m.motivationFactor;
-
             finalAIScore = Math.max(10, Math.min(99, Math.round(finalAIScore)));
+
+            const odds = m.odds || {h:1.8, d:3.2, a:4.0};
+            const hInv = 1 / odds.h; const dInv = 1 / odds.d; const aInv = 1 / odds.a;
+            const sumProb = hInv + dInv + aInv;
+            const hPct = hInv / sumProb; 
+            const aPct = aInv / sumProb;
+
+            let predH = 1, predA = 1;
+            if (hPct > aPct) {
+                if (hPct > 0.60) { predH = 3; predA = 0; }
+                else if (hPct > 0.50) { predH = 2; predA = 0; }
+                else { predH = 2; predA = 1; }
+            } else if (aPct > hPct) {
+                if (aPct > 0.60) { predH = 0; predA = 3; }
+                else if (aPct > 0.50) { predH = 0; predA = 2; }
+                else { predH = 1; predA = 2; }
+            } else {
+                predH = 1; predA = 1;
+            }
 
             const fallbackFormations = [
                 {home:'4-3-3', away:'3-5-2'}, {home:'4-2-3-1', away:'4-3-3'},
@@ -87,15 +115,19 @@ class FootballAPIService {
             ];
 
             return {
-                time: m.time, home: m.home, away: m.away, league: m.league,
+                time: m.time || m.current_minute || '18:00', // รองรับโครงสร้าง V2
+                home: m.home || m.home_team || 'Unknown', 
+                away: m.away || m.away_team || 'Unknown', 
+                league: m.league || 'UEFA CL',
                 score: finalAIScore,
-                odds: m.odds || {h:1.8, d:3.2, a:4.0},
+                odds: odds,
                 openingOdds: m.openingOdds || m.odds || {h:1.9, d:3.2, a:3.8},
                 injury: m.injury || 'ไม่มีตัวเจ็บเพิ่มเติม',
                 h2h: m.h2h || 'สูสีเบียดกันมาตลอด',
                 form: m.form || {h:['W','D','W','L','W'], a:['W','L','D','W','D']},
                 formations: m.formations || fallbackFormations[idx % fallbackFormations.length],
-                oddsDropAlert: oddsDropPercent > 7
+                oddsDropAlert: oddsDropPercent > 7,
+                predictedScore: m.predictedScore || `${predH} - ${predA}` 
             };
         });
     }
@@ -129,19 +161,14 @@ function getStatus(score) {
     return { cls: 'status-reject', label: 'REJECTED', dot: false };
 }
 
-// [ADDED] ฟังก์ชันตัวช่วยแปลงเวลาและระบุป้าย "วันนี้"
 function formatTimeDisplay(timeStr) {
     let formattedTime = timeStr;
     const d = new Date(timeStr);
-    
-    // หากเป็นข้อมูลจาก API จริง (รูปแบบ ISO Timestamp)
     if (!isNaN(d.getTime()) && timeStr.toString().includes('-')) {
         const h = d.getHours().toString().padStart(2, '0');
         const min = d.getMinutes().toString().padStart(2, '0');
         formattedTime = `${h}:${min}`;
     }
-    
-    // คืนค่าเป็น HTML ที่จัดสไตล์ตัวอักษรแล้ว
     return `
         <div style="font-size:0.68rem; color:#3b82f6; font-weight:700; letter-spacing:0.5px; margin-bottom:2px;">วันนี้</div>
         <div style="font-size:0.85rem; font-family:'Teko', sans-serif; font-weight:500; letter-spacing:0.5px;">${formattedTime}</div>
@@ -155,7 +182,7 @@ function updateMatchProbabilityDonut(match) {
     const dPct = Math.round((dInv / sum) * 100);
     const aPct = 100 - hPct - dPct;
     
-    document.getElementById('dist-title').innerHTML = `PROBABILITY MAP: ${match.home} VS ${match.away}`;
+    document.getElementById('dist-title').innerHTML = `PROBABILITY MAP <span style="float:right; color:#4ade80; background:rgba(74,222,128,0.15); padding:1px 6px; border-radius:4px; font-weight:700;">🎯 ${match.predictedScore}</span>`;
     document.getElementById('total-matches').textContent = match.score;
     document.getElementById('dist-center-label').textContent = 'AI SCORE';
     
@@ -200,7 +227,8 @@ function renderDynamicFormGuide(match) {
         { name: match.away, form: match.form.a, logo: LOGOS[match.away] || '' }
     ];
     document.getElementById('form-guide').innerHTML = teams.map(t => {
-        const logoHtml = t.logo ? `<img src="${t.logo}" class="team-logo-img">` : '';
+        // [CHANGED] เพิ่ม LOGO_HIGHLIGHT_STYLE เพื่อแก้ไขให้โลโก้สีดำชัดเจนขึ้น
+        const logoHtml = t.logo ? `<img src="${t.logo}" class="team-logo-img" style="${LOGO_HIGHLIGHT_STYLE}">` : '';
         const dots = t.form.map(r => `<div class="form-dot form-${r.toLowerCase()}">${r}</div>`).join('');
         return `<div class="form-team">
             <div class="form-logo-wrap">${logoHtml}</div>
@@ -300,17 +328,17 @@ function renderMatches() {
         const homeLogoUrl = LOGOS[m.home] || '';
         const awayLogoUrl = LOGOS[m.away] || '';
 
-        // เรียกใช้ฟังก์ชัน formatTimeDisplay() เพื่อแสดง "วันนี้" ด้านบนเวลา
+        // [CHANGED] เพิ่ม LOGO_HIGHLIGHT_STYLE ในตารางแข่งขันหลัก
         return `<tr class="match-row" data-index="${allMatches.indexOf(m)}">
             <td class="time-cell" style="text-align:center; vertical-align:middle;">
                 ${formatTimeDisplay(m.time)}
             </td>
             <td>
                 <div class="match-cell-container">
-                    <div class="match-logos-stack">
-                        <img src="${homeLogoUrl}" class="team-logo-img" alt="${m.home}">
-                        <span class="vs-tiny">vs</span>
-                        <img src="${awayLogoUrl}" class="team-logo-img" alt="${m.away}">
+                    <div class="match-logos-stack" style="width: auto;">
+                        <img src="${homeLogoUrl}" class="team-logo-img" alt="${m.home}" style="${LOGO_HIGHLIGHT_STYLE}">
+                        <span style="font-size:0.75rem; font-family:'Teko',sans-serif; font-weight:700; color:#4ade80; background:rgba(74,222,128,0.15); padding:1px 6px; border-radius:4px; border:1px solid rgba(74,222,128,0.3); line-height:1.2;">${m.predictedScore}</span>
+                        <img src="${awayLogoUrl}" class="team-logo-img" alt="${m.away}" style="${LOGO_HIGHLIGHT_STYLE}">
                     </div>
                     <div class="match-names-stack">
                         <div class="team-name-row">${m.home}</div>
