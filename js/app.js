@@ -1,17 +1,17 @@
 /**
  * AI Football Prediction Scanner - Core Application Logic
- * Version: 4.6 (V2 API Ready + Logo High-Contrast Fix)
+ * Version: 5.0 (API-Football Integration & Dynamic Logos)
  */
 
-// --- 1. API CONFIGURATION ---
-const BSD_API_CONFIG = {
-    // อัปเดตชี้ไปที่เซิร์ฟเวอร์ V2
-    BASE_URL: 'https://api.bzzoiro.com/api/v2', 
-    API_KEY: '07f957204727339378ce25dd19c68600bb799a42', 
-    ENABLE_REAL_API: true                                
+// --- 1. API CONFIGURATION (API-FOOTBALL) ---
+const API_FOOTBALL_CONFIG = {
+    BASE_URL: 'https://v3.football.api-sports.io',
+    // ⚠️ นำ API Key ที่ได้จากการสมัครฟรีที่ dashboard.api-football.com มาใส่ตรงนี้
+    API_KEY: '8d7bd5b4e39d67ac804b96a08eac5723', 
+    ENABLE_REAL_API: true
 };
 
-// --- STABLE LOGOS CDN ---
+// --- STABLE LOGOS CDN (เผื่อสำรองกรณี API ไม่ส่งรูปมา) ---
 const LOGOS = {
     'เชลซี': 'https://crests.football-data.org/61.png',
     'นิวคาสเซิล': 'https://crests.football-data.org/67.png',
@@ -28,69 +28,84 @@ const LOGOS = {
     'อาร์เซนอล': 'https://crests.football-data.org/57.png',
     'แมนซิตี้': 'https://crests.football-data.org/65.png',
     'ลิเวอร์พูล': 'https://crests.football-data.org/64.png',
-    'แมนยู': 'https://crests.football-data.org/66.png',
-    'ยูเวนตุส': 'https://crests.football-data.org/109.png',
-    'เรอัล มาดริด': 'https://crests.football-data.org/86.png',
-    'เปแอสเช': 'https://crests.football-data.org/524.png',
-    'บาเยิร์น': 'https://crests.football-data.org/5.png'
+    'แมนยู': 'https://crests.football-data.org/66.png'
 };
 
 const FLAG = {'ENG PR':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','GER BL':'🇩🇪','SPA LA':'🇪🇸','ITA SA':'🇮🇹','FRA LI':'🇫🇷','POR LP':'🇵🇹', 'UEFA CL':'🇪🇺'};
 const LEAGUE_FULL = {'ENG PR':'Premier League','GER BL':'Bundesliga','SPA LA':'La Liga','ITA SA':'Serie A','FRA LI':'Ligue 1','POR LP':'Primeira Liga', 'UEFA CL':'Champions League'};
 
 const MATCHES_BASE = [
-    {time:'18:30',home:'เรอัล มาดริด',away:'ยูเวนตุส',league:'UEFA CL',score:85,odds:{h:1.75,d:3.6,a:4.5},openingOdds:{h:1.80,d:3.5,a:4.2},motivationFactor:1.3,injury:'ไม่มีรายงานตัวเจ็บเพิ่ม',h2h:'มาดริด 2W-2D-1L',form:{h:['W','W','D','W','W'],a:['W','D','D','W','W']},formations:{home:'4-3-3',away:'3-5-2'}},
-    {time:'19:00',home:'เปแอสเช',away:'บาเยิร์น',league:'UEFA CL',score:88,odds:{h:2.4,d:3.3,a:2.8},openingOdds:{h:2.60,d:3.2,a:2.6},motivationFactor:1.2,injury:'เปแอสเช (รอเช็กฟิต)',h2h:'บาเยิร์น 3W-1D-1L',form:{h:['W','W','L','W','W'],a:['W','W','W','D','W']},formations:{home:'4-3-3',away:'4-2-3-1'}},
+    {time:'18:30',home:'เรอัล มาดริด',away:'ยูเวนตุส',league:'UEFA CL',score:85,odds:{h:1.75,d:3.6,a:4.5},openingOdds:{h:1.80,d:3.5,a:4.2},motivationFactor:1.3,injury:'ไม่มีรายงานตัวเจ็บเพิ่ม',h2h:'มาดริด 2W-2D-1L',form:{h:['W','W','D','W','W'],a:['W','D','D','W','W']},formations:{home:'4-3-3',away:'3-5-2'}, logoHome:'https://crests.football-data.org/86.png', logoAway:'https://crests.football-data.org/109.png'},
+    {time:'19:00',home:'เปแอสเช',away:'บาเยิร์น',league:'UEFA CL',score:88,odds:{h:2.4,d:3.3,a:2.8},openingOdds:{h:2.60,d:3.2,a:2.6},motivationFactor:1.2,injury:'เปแอสเช (รอเช็กฟิต)',h2h:'บาเยิร์น 3W-1D-1L',form:{h:['W','W','L','W','W'],a:['W','W','W','D','W']},formations:{home:'4-3-3',away:'4-2-3-1'}, logoHome:'https://crests.football-data.org/524.png', logoAway:'https://crests.football-data.org/5.png'},
     {time:'20:00',home:'เชลซี',away:'นิวคาสเซิล',league:'ENG PR',score:78,odds:{h:1.85,d:3.4,a:4.2},openingOdds:{h:2.10,d:3.3,a:3.8},motivationFactor:1.2,injury:'ไม่มีรายงานตัวเจ็บเพิ่ม',h2h:'เชลซี 3W-1D-1L',form:{h:['W','W','D','W','W'],a:['W','L','D','W','W']},formations:{home:'4-2-3-1',away:'4-3-3'}},
     {time:'20:30',home:'บาร์เซโลน่า',away:'เรอัล โซเซียดัด',league:'SPA LA',score:65,odds:{h:1.6,d:3.8,a:5.5},openingOdds:{h:1.62,d:3.7,a:5.4},motivationFactor:1.1,injury:'เปโดร (แขวน)',h2h:'บาร์ซา 4W-0D-1L',form:{h:['W','W','W','D','W'],a:['D','W','L','W','D']},formations:{home:'4-3-3',away:'4-2-3-1'}},
-    {time:'21:00',home:'ดอร์ทมุนด์',away:'ไลป์ซิก',league:'GER BL',score:72,odds:{h:2.1,d:3.2,a:3.6},openingOdds:{h:2.15,d:3.2,a:3.5},motivationFactor:1.0,injury:'',h2h:'ดอร์ทมุนด์ 2W-2D-1L',form:{h:['W','D','W','L','W'],a:['W','W','L','D','W']},formations:{home:'4-4-2',away:'4-3-3'}},
-    {time:'22:00',home:'เอซี มิลาน',away:'อตาลันต้า',league:'ITA SA',score:58,odds:{h:2.3,d:3.1,a:3.2},openingOdds:{h:2.20,d:3.2,a:3.4},motivationFactor:1.0,injury:'ลีโอ (พัก)',h2h:'มิลาน 2W-1D-2L',form:{h:['W','L','D','W','L'],a:['W','W','D','W','L']},formations:{home:'4-2-3-1',away:'3-5-2'}}
+    {time:'21:00',home:'ดอร์ทมุนด์',away:'ไลป์ซิก',league:'GER BL',score:72,odds:{h:2.1,d:3.2,a:3.6},openingOdds:{h:2.15,d:3.2,a:3.5},motivationFactor:1.0,injury:'',h2h:'ดอร์ทมุนด์ 2W-2D-1L',form:{h:['W','D','W','L','W'],a:['W','W','L','D','W']},formations:{home:'4-4-2',away:'4-3-3'}}
 ];
 
-// --- สไตล์สำหรับไฮไลต์โลโก้ทีม ---
 const LOGO_HIGHLIGHT_STYLE = "background-color: rgba(255, 255, 255, 0.85); border-radius: 50%; padding: 2px; box-shadow: 0 0 5px rgba(255,255,255,0.2);";
 
-// --- 2. SERVICE LAYER ---
+// --- 2. SERVICE LAYER (API-FOOTBALL) ---
 class FootballAPIService {
     static async fetchScannedMatches() {
-        if (!BSD_API_CONFIG.ENABLE_REAL_API) {
+        if (!API_FOOTBALL_CONFIG.ENABLE_REAL_API || API_FOOTBALL_CONFIG.API_KEY === 'YOUR_API_FOOTBALL_KEY_HERE') {
+            console.warn("⚠️ API Key ไม่พร้อมใช้งาน กำลังสลับไปใช้ฐานข้อมูลจำลอง (Fallback)");
             return this.executeFallbackProcess();
         }
+
         try {
-            // ยิงไปที่ Endpoint V2
-            const response = await fetch(`${BSD_API_CONFIG.BASE_URL}/events/live/`, {
+            // สร้างวันที่ปัจจุบัน (YYYY-MM-DD) ตามเวลาโซนเอเชีย/กรุงเทพฯ
+            const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+            const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+            const response = await fetch(`${API_FOOTBALL_CONFIG.BASE_URL}/fixtures?date=${todayStr}`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${BSD_API_CONFIG.API_KEY}`,
+                    'x-apisports-key': API_FOOTBALL_CONFIG.API_KEY,
                     'Content-Type': 'application/json'
                 }
             });
+
             if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
             const rawData = await response.json();
             
-            // ดักจับโครงสร้าง V2 หรือ V1 
-            const dataToMap = rawData.events || rawData.data || rawData;
-            return this.mapAndAnalyzeData(dataToMap);
+            if (!rawData.response || rawData.response.length === 0) {
+                console.warn("ℹ️ วันนี้ไม่มีโปรแกรมแข่งขันในฐานข้อมูล");
+                return [];
+            }
+
+            // คัดเอาเฉพาะ 20 คู่แรกที่มีการแข่งขัน เพื่อไม่ให้หน้าเว็บล้นเกินไป
+            const todaysMatches = rawData.response.slice(0, 20);
+            return this.mapAndAnalyzeData(todaysMatches, true);
+
         } catch (error) {
-            console.warn("⚠️ V2 API connection failed or data mismatch. Engaging Fallback Engine.", error);
+            console.error("❌ API-Football Connection Failed:", error);
             return this.executeFallbackProcess();
         }
     }
 
-    static mapAndAnalyzeData(fixtures) {
+    // ฟังก์ชันแปลงข้อมูลจาก API-Football ให้เข้ากับ UI ของเรา
+    static mapAndAnalyzeData(fixtures, isRealAPI = false) {
         if (!Array.isArray(fixtures)) return [];
         
         return fixtures.map((m, idx) => {
-            let oddsDropPercent = 0;
-            if (m.openingOdds && m.odds && m.openingOdds.h) {
-                oddsDropPercent = ((m.openingOdds.h - m.odds.h) / m.openingOdds.h) * 100;
-            }
-            let finalAIScore = m.score || 50;
-            if (oddsDropPercent > 8) finalAIScore += 5; 
-            if (m.motivationFactor) finalAIScore = finalAIScore * m.motivationFactor;
+            // หากเป็นข้อมูลจริงจาก API-Football ให้ดึงชื่อทีม โลโก้ และเวลาเตะออกมา
+            const homeTeamName = isRealAPI ? m.teams.home.name : m.home;
+            const awayTeamName = isRealAPI ? m.teams.away.name : m.away;
+            const matchTime = isRealAPI ? m.fixture.date : m.time;
+            const leagueName = isRealAPI ? m.league.name : m.league;
+            
+            const homeLogo = isRealAPI ? m.teams.home.logo : m.logoHome;
+            const awayLogo = isRealAPI ? m.teams.away.logo : m.logoAway;
+
+            // --- ส่วนของระบบจำลอง AI Score และ Odds สำหรับแดชบอร์ด ---
+            let oddsDropPercent = Math.random() * 10;
+            let baseScore = isRealAPI ? Math.floor(Math.random() * (90 - 45 + 1)) + 45 : (m.score || 50);
+            let finalAIScore = baseScore;
+            if (oddsDropPercent > 7) finalAIScore += 5; 
             finalAIScore = Math.max(10, Math.min(99, Math.round(finalAIScore)));
 
-            const odds = m.odds || {h:1.8, d:3.2, a:4.0};
+            // จำลองค่าน้ำ 1X2 
+            const odds = m.odds || {h: (Math.random() * 2 + 1.5).toFixed(2), d: 3.2, a: (Math.random() * 3 + 2.5).toFixed(2)};
             const hInv = 1 / odds.h; const dInv = 1 / odds.d; const aInv = 1 / odds.a;
             const sumProb = hInv + dInv + aInv;
             const hPct = hInv / sumProb; 
@@ -115,15 +130,17 @@ class FootballAPIService {
             ];
 
             return {
-                time: m.time || m.current_minute || '18:00', // รองรับโครงสร้าง V2
-                home: m.home || m.home_team || 'Unknown', 
-                away: m.away || m.away_team || 'Unknown', 
-                league: m.league || 'UEFA CL',
+                time: matchTime, 
+                home: homeTeamName, 
+                away: awayTeamName, 
+                league: leagueName,
+                logoHome: homeLogo,
+                logoAway: awayLogo,
                 score: finalAIScore,
                 odds: odds,
-                openingOdds: m.openingOdds || m.odds || {h:1.9, d:3.2, a:3.8},
-                injury: m.injury || 'ไม่มีตัวเจ็บเพิ่มเติม',
-                h2h: m.h2h || 'สูสีเบียดกันมาตลอด',
+                openingOdds: {h: (parseFloat(odds.h) + 0.2).toFixed(2), d: 3.2, a: 3.8},
+                injury: 'กำลังวิเคราะห์รายชื่อ...',
+                h2h: 'กำลังประมวลผล H2H...',
                 form: m.form || {h:['W','D','W','L','W'], a:['W','L','D','W','D']},
                 formations: m.formations || fallbackFormations[idx % fallbackFormations.length],
                 oddsDropAlert: oddsDropPercent > 7,
@@ -134,7 +151,7 @@ class FootballAPIService {
 
     static executeFallbackProcess() {
         return new Promise((resolve) => {
-            setTimeout(() => { resolve(this.mapAndAnalyzeData(MATCHES_BASE)); }, 300);
+            setTimeout(() => { resolve(this.mapAndAnalyzeData(MATCHES_BASE, false)); }, 300);
         });
     }
 }
@@ -223,11 +240,10 @@ function renderDynamicFactors(match) {
 function renderDynamicFormGuide(match) {
     document.getElementById('form-title').innerHTML = `FORM GUIDE: <span style="color:#3b82f6">${match.home}</span> vs <span style="color:#ef4444">${match.away}</span>`;
     const teams = [
-        { name: match.home, form: match.form.h, logo: LOGOS[match.home] || '' },
-        { name: match.away, form: match.form.a, logo: LOGOS[match.away] || '' }
+        { name: match.home, form: match.form.h, logo: match.logoHome || LOGOS[match.home] || '' },
+        { name: match.away, form: match.form.a, logo: match.logoAway || LOGOS[match.away] || '' }
     ];
     document.getElementById('form-guide').innerHTML = teams.map(t => {
-        // [CHANGED] เพิ่ม LOGO_HIGHLIGHT_STYLE เพื่อแก้ไขให้โลโก้สีดำชัดเจนขึ้น
         const logoHtml = t.logo ? `<img src="${t.logo}" class="team-logo-img" style="${LOGO_HIGHLIGHT_STYLE}">` : '';
         const dots = t.form.map(r => `<div class="form-dot form-${r.toLowerCase()}">${r}</div>`).join('');
         return `<div class="form-team">
@@ -315,7 +331,7 @@ function renderMatches() {
 
     const tbody = document.getElementById('match-tbody');
     if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:rgba(148,163,184,0.4)">ไม่พบคู่แข่งขันที่ตรงตามเงื่อนไขตัวกรอง</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:rgba(148,163,184,0.4)">ไม่มีโปรแกรมเตะ หรือไม่พบข้อมูลตามตัวกรอง</td></tr>`;
         return;
     }
 
@@ -325,10 +341,10 @@ function renderMatches() {
         const dropAlertHtml = m.oddsDropAlert ? `<span style="color:#ef4444;font-size:10px;margin-left:4px">🔥 น้ำไหล</span>` : '';
         const oddsHtml = `<div class="odds-sub-text">1:${m.odds.h} · X:${m.odds.d} · 2:${m.odds.a} ${dropAlertHtml}</div>`;
         
-        const homeLogoUrl = LOGOS[m.home] || '';
-        const awayLogoUrl = LOGOS[m.away] || '';
+        // ใช้โลโก้จาก API-Football ก่อน ถ้าไม่มีค่อยใช้ LOGOS ของเรา
+        const homeLogoUrl = m.logoHome || LOGOS[m.home] || '';
+        const awayLogoUrl = m.logoAway || LOGOS[m.away] || '';
 
-        // [CHANGED] เพิ่ม LOGO_HIGHLIGHT_STYLE ในตารางแข่งขันหลัก
         return `<tr class="match-row" data-index="${allMatches.indexOf(m)}">
             <td class="time-cell" style="text-align:center; vertical-align:middle;">
                 ${formatTimeDisplay(m.time)}
@@ -365,7 +381,7 @@ function renderLeagueBreakdown(data) {
     
     document.getElementById('league-list').innerHTML = sorted.map(([lg, ct]) =>
         `<div class="league-item">
-            <div class="league-name">${FLAG[lg] || ''} ${lg}</div>
+            <div class="league-name" style="width:75px">${FLAG[lg] || ''} ${lg.substring(0, 10)}</div>
             <div class="league-bar-wrap"><div class="league-bar-fill" style="width:${Math.round(ct / max * 100)}%;background:${BAR_COLORS[lg] || '#3b82f6'}"></div></div>
             <div class="league-count">${ct}</div>
         </div>`
@@ -418,7 +434,7 @@ function initTrend() {
 
 async function loadData() {
     const tbody = document.getElementById('match-tbody');
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2.5rem;color:rgba(148,163,184,0.5)">🔄 กำลังสแกนคัดคู่บอลสดผ่านระบบวิเคราะห์ BSD API...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2.5rem;color:rgba(148,163,184,0.5)">🔄 กำลังสแกนคัดคู่บอลสดจากฐานข้อมูล...</td></tr>`;
     
     allMatches = await FootballAPIService.fetchScannedMatches();
     
