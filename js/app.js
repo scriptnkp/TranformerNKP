@@ -4,53 +4,13 @@ let chartDonutInstance = null;
 let chartLineInstance = null;
 
 // ==========================================================================
-// 1. APP ENTRY POINT
+// INITIALIZATION
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
     initializeEmptyCharts();
-    setupPasscodeFlow();
+    executeDataScan(); // สั่งรันสแกนข้อมูลผลบอลทันทีที่เปิดเว็บ!
 });
-
-function setupPasscodeFlow() {
-    const inputs = document.querySelectorAll('.code-input');
-    const errorBox = document.getElementById('passcode-error-msg');
-
-    inputs.forEach((input, index) => {
-        input.addEventListener('input', async () => {
-            input.value = input.value.replace(/[^0-9]/g, ''); // รับตัวเลขเท่านั้น
-
-            if (input.value.length === 1 && index < inputs.length - 1) {
-                inputs[index + 1].focus(); // ย้ายช่องอัตโนมัติ
-            }
-
-            const compiledCode = Array.from(inputs).map(i => i.value).join('');
-            if (compiledCode.length === 6) {
-                errorBox.style.color = 'var(--neon-cyan)';
-                errorBox.innerText = "กำลังตรวจสอบสิทธิ์ความปลอดภัย...";
-
-                const isCorrect = await AppDataLayer.verifyPasscodeWithBackend(compiledCode);
-
-                if (isCorrect) {
-                    errorBox.innerText = "";
-                    document.getElementById('passcode-overlay').classList.add('access-granted');
-                    executeDataScan(); 
-                } else {
-                    errorBox.style.color = 'var(--neon-red)';
-                    errorBox.innerText = "❌ รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง";
-                    inputs.forEach(i => i.value = '');
-                    inputs[0].focus();
-                }
-            }
-        });
-
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
-                inputs[index - 1].focus();
-            }
-        });
-    });
-}
 
 function setupEventListeners() {
     document.getElementById('btn-fetch-data').addEventListener('click', executeDataScan);
@@ -66,7 +26,7 @@ function setupEventListeners() {
 }
 
 // ==========================================================================
-// 2. WEIGHTED ANALYTICAL ENGINE (วิเคราะห์ 5 ปัจจัยหลัก)
+// AI 5-DIMENSIONS SCORING ENGINE
 // ==========================================================================
 function runAnalyticalRules(match) {
     const baseline = match.ml_predict.home_win_pct; 
@@ -87,7 +47,7 @@ function runAnalyticalRules(match) {
 }
 
 // ==========================================================================
-// 3. UI DATATABLE RENDERING
+// DATA SCANNING & TABLE RENDERING
 // ==========================================================================
 async function executeDataScan() {
     toggleSkeletonLoader(true);
@@ -100,10 +60,15 @@ async function executeDataScan() {
     });
 
     toggleSkeletonLoader(false);
-    document.getElementById('sync-timestamp').innerText = `อัปเดตสแกนล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
+    document.getElementById('sync-timestamp').innerText = `อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
     
     renderMatchTable();
     updateDonutDistribution();
+
+    // ดึงคู่แรกมาโชว์สถิติเจาะลึกทันทีที่โหลดเสร็จ
+    if(rawMatchesCache.length > 0) {
+        handleMatchSelection(rawMatchesCache[0]);
+    }
 }
 
 function toggleSkeletonLoader(show) {
@@ -126,7 +91,7 @@ function renderMatchTable() {
     });
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:25px;">ไม่พบคู่แข่งขันที่ตรงเงื่อนไข</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">ไม่พบคู่แข่งขันที่ตรงเงื่อนไข</td></tr>`;
         return;
     }
 
@@ -147,18 +112,14 @@ function renderMatchTable() {
 }
 
 // ==========================================================================
-// 4. SMART VISUALS CONFIGS
+// DEEP-DIVE INSIGHTS & CHARTS UPDATER
 // ==========================================================================
 function handleMatchSelection(match) {
     const insightBox = document.getElementById('ai-commentary-box');
     let commentary = `บทสรุปอัจฉริยะ: แมตช์ระหว่าง **${match.home}** และ **${match.away}** ได้คะแนนดัชนีสุทธิ ${match.calculatedScore}% อยู่ในระดับเกรด **${match.calculatedStatus}** `;
     
-    if (match.odds_flow === 'dropping') {
-        commentary += `โดยตรวจพบบันทึกเงินทุนไหลเข้าฝั่งเจ้าบ้าน (Dropping Odds) อย่างผิดปกติชัดเจนครับ `;
-    }
-    if (match.injuries.away_key_out > 0) {
-        commentary += `และทีมเยือนยังมีตัวหลักบาดเจ็บส่งผลเสียต่อรูปเกมชัดเจน`;
-    }
+    if (match.odds_flow === 'dropping') commentary += `พบทิศทางราคาไหลลง (Dropping Odds) สนับสนุนทีมเหย้าชัดเจน `;
+    if (match.injuries.away_key_out > 0) commentary += `ทีมเยือนมีตัวหลักบาดเจ็บส่งผลเสียต่อรูปเกม `;
     insightBox.innerHTML = commentary;
 
     document.getElementById('txt-home-formation').innerText = `${match.home}\n(${match.lineups.home_form})`;
@@ -174,6 +135,7 @@ function handleMatchSelection(match) {
 
     updateTrendLineChart([45, 52, 60, match.calculatedScore - 3, match.calculatedScore]);
 
+    // ยิงบันทึกลงตารางหลังบ้านแบบเบื้องหลัง
     AppDataLayer.sendToGasDatabase({
         matchId: match.id, homeTeam: match.home, awayTeam: match.away, league: match.league, aiScore: match.calculatedScore, status: match.calculatedStatus
     });
@@ -190,7 +152,7 @@ function initializeEmptyCharts() {
     const ctxLine = document.getElementById('lineTrendChart').getContext('2d');
     chartLineInstance = new Chart(ctxLine, {
         type: 'line',
-        data: { labels: ['5 นัดก่อน', '4 นัดก่อน', '3 นัดก่อน', '2 นัดก่อน', 'นัดล่าสุด'], datasets: [{ label: 'ทิศทางคะแนน AI', data: [0, 0, 0, 0, 0], borderColor: '#00f2fe', borderWidth: 2, pointBackgroundColor: '#00f2fe', fill: false, tension: 0.25 }] },
+        data: { labels: ['5 นัดก่อน', '4 นัดก่อน', '3 นัดก่อน', '2 นัดก่อน', 'ล่าสุด'], datasets: [{ label: 'ทิศทางคะแนน AI', data: [0, 0, 0, 0, 0], borderColor: '#00f2fe', borderWidth: 2, pointBackgroundColor: '#00f2fe', fill: false, tension: 0.25 }] },
         options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#64748b' } }, y: { ticks: { color: '#64748b' }, min: 0, max: 100 } } }
     });
 }

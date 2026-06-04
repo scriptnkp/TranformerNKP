@@ -3,39 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crazy Gang Football - AI Match Scanner Pro</title>
+    <title>Crazy Gang Football - AI Match Scanner</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="app-container">
-
-        <div id="passcode-overlay" class="passcode-screen">
-            <div class="passcode-container">
-                <div class="lock-icon">🔒</div>
-                <h2>CRAZY GANG SECURITY</h2>
-                <p>กรุณากรอกรหัสผ่าน 6 หลักเพื่อปลดล็อกฐานข้อมูล</p>
-                <div class="passcode-inputs">
-                    <input type="password" maxlength="1" class="code-input" autofocus>
-                    <input type="password" maxlength="1" class="code-input">
-                    <input type="password" maxlength="1" class="code-input">
-                    <input type="password" maxlength="1" class="code-input">
-                    <input type="password" maxlength="1" class="code-input">
-                    <input type="password" maxlength="1" class="code-input">
-                </div>
-                <div id="passcode-error-msg" class="error-text"></div>
-            </div>
-        </div>
-
         <header class="main-header">
             <div class="logo-area">
                 <h1>CRAZY GANG MATCH SCANNER</h1>
                 <p>ระบบวิเคราะห์สแกนผลแข่งขันฟุตบอลล่วงหน้าด้วยโมเดล 5 มิติอัจฉริยะ</p>
             </div>
             <div class="action-area">
-                <span id="sync-timestamp" class="timestamp">สถานะ: รอการปลดล็อกแอป</span>
-                <button id="btn-fetch-data" class="btn-primary">🔄 สแกนข้อมูลสดจาก BSD</button>
+                <span id="sync-timestamp" class="timestamp">สถานะ: ระบบพร้อมทำงาน</span>
+                <button id="btn-fetch-data" class="btn-primary">🔄 สแกนข้อมูลสด</button>
             </div>
         </header>
 
@@ -50,7 +32,7 @@
             <main class="left-panel">
                 <div class="panel-card">
                     <div class="card-header">
-                        <h2>AI MATCH SCANNER <span class="sub-title">PRE-MATCH FILTERING SYSTEM</span></h2>
+                        <h2>AI MATCH SCANNER <span class="sub-title">PRE-MATCH FILTERING</span></h2>
                     </div>
                     <div class="table-container">
                         <table id="match-data-table">
@@ -60,7 +42,7 @@
                                     <th>คู่แข่งขัน</th>
                                     <th>ลีก</th>
                                     <th>AI SCORE</th>
-                                    <th>สถานะการคัดกรอง</th>
+                                    <th>สถานะ</th>
                                 </tr>
                             </thead>
                             <tbody id="match-table-body">
@@ -74,7 +56,7 @@
                 <div class="panel-card insight-card">
                     <h3>💡 AI SMART INSIGHTS</h3>
                     <div id="ai-commentary-box" class="insight-content">
-                        กรุณาคลิกเลือกคู่แข่งขันที่คุณสนใจจากตารางเพื่ออ่านสรุปเกมย่อใน 1 ประโยค
+                        คลิกเลือกคู่บอลเพื่อดูบทสรุปการวิเคราะห์เชิงลึก...
                     </div>
                 </div>
 
@@ -86,7 +68,7 @@
                 </div>
 
                 <div class="panel-card">
-                    <h3>สนามจำลองแผนการเล่น (TACTICAL OVERVIEW)</h3>
+                    <h3>สนามจำลองแทคติก (TACTICAL OVERVIEW)</h3>
                     <div class="pitch-container">
                         <div class="pitch">
                             <div class="line center-line"></div>
@@ -109,7 +91,7 @@
             <div class="panel-card">
                 <h3>🎯 AI KEY FACTORS ANALYSIS (5 DIMENSIONS)</h3>
                 <div id="factor-bars-wrapper" class="factors-list">
-                    <p class="text-muted">โปรดเลือกคู่แข่งขันเพื่อแจกแจงสถิติปัจจัยถ่วงน้ำหนัก</p>
+                    <p class="text-muted">คลิกเลือกคู่บอลเพื่อวิเคราะห์ปัจจัยตัวคูณคะแนน...</p>
                 </div>
             </div>
         </section>
