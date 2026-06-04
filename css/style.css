@@ -1,9 +1,9 @@
 /* ==========================================================================
-   1. DESIGN SYSTEM VARIABLES & CORE
+   1. CORE VARIABLES & LAYOUT CONFIG
    ========================================================================== */
 :root {
-    --bg-main: #050a15;
-    --card-bg: rgba(13, 22, 41, 0.65);
+    --bg-main: #040812;
+    --card-bg: rgba(13, 23, 42, 0.7);
     --border-neon: rgba(0, 242, 254, 0.15);
     --neon-cyan: #00f2fe;
     --neon-green: #00e676;
@@ -15,68 +15,58 @@
 }
 
 body {
-    margin: 0; padding: 0;
-    font-family: var(--font-stack);
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    background-image: radial-gradient(circle at 50% 10%, #0e1e36 0%, #050a15 75%);
-    min-height: 100vh;
+    margin: 0; padding: 0; font-family: var(--font-stack); background-color: var(--bg-main); color: var(--text-main);
+    background-image: radial-gradient(circle at 50% 5%, #0d1e36 0%, #040812 80%); min-height: 100vh;
 }
-
 .app-container { max-width: 1400px; margin: 0 auto; padding: 25px; }
 
 /* ==========================================================================
-   2. SECURITY LOCK OVERLAY CSS
+   2. SECURITY LOCK SCREEN UI
    ========================================================================== */
 .passcode-screen {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(4, 8, 16, 0.95); backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px); z-index: 99999;
-    display: flex; justify-content: center; align-items: center;
-    transition: opacity 0.3s ease, visibility 0.3s;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 7, 18, 0.96);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 99999; display: flex; justify-content: center; align-items: center;
 }
-.passcode-screen.access-granted { opacity: 0; visibility: hidden; pointer-events: none; }
+.passcode-screen.access-granted { opacity: 0; visibility: hidden; pointer-events: none; transition: all 0.4s ease; }
 .passcode-container {
-    background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-neon);
-    padding: 35px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-    max-width: 380px; width: 90%; text-align: center;
+    background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-neon); padding: 35px; border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7); max-width: 380px; width: 90%; text-align: center;
 }
 .lock-icon { font-size: 45px; margin-bottom: 12px; }
 .passcode-inputs { display: flex; justify-content: space-between; gap: 6px; margin: 25px 0 15px 0; }
 .code-input {
-    width: 42px; height: 50px; background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 10px;
-    text-align: center; font-size: 24px; color: #fff;
+    width: 42px; height: 50px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 10px; text-align: center; font-size: 24px; color: #fff;
 }
 .code-input:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); outline: none; }
 .error-text { color: var(--neon-red); font-size: 13px; font-weight: 600; min-height: 20px; }
 
 /* ==========================================================================
-   3. LAYOUT & MODERN PANELS
+   3. APP CARDS & COMPONENTS LAYOUT
    ========================================================================== */
 .main-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-neon); padding-bottom: 15px; margin-bottom: 20px; }
-.main-header h1 { margin: 0; font-size: 22px; color: #fff; letter-spacing: 0.5px; }
+.main-header h1 { margin: 0; font-size: 22px; color: #fff; }
 .main-header p { margin: 4px 0 0 0; color: var(--text-muted); font-size: 13px; }
 
 .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; }
 .filter-pill {
-    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);
-    color: var(--text-main); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.2s;
+    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-main);
+    padding: 8px 16px; border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.2s;
 }
 .filter-pill:hover, .filter-pill.active { background: rgba(0, 242, 254, 0.12); border-color: var(--neon-cyan); }
 
 .grid-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 20px; }
-.panel-card { background: var(--card-bg); border: 1px solid var(--border-neon); border-radius: 14px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
+.panel-card { background: var(--card-bg); border: 1px solid var(--border-neon); border-radius: 14px; padding: 20px; }
 .insight-card { border-left: 4px solid var(--neon-cyan); background: linear-gradient(135deg, rgba(13,22,41,0.9), rgba(5,10,21,0.9)); }
-.panel-card h3 { margin-top: 0; font-size: 14px; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 0.5px; }
+.panel-card h3 { margin-top: 0; font-size: 14px; color: var(--text-muted); margin-bottom: 12px; }
 
 /* ==========================================================================
-   4. DATA TABLES & INTERACTIONS
+   4. DATA TABLE SYSTEM
    ========================================================================== */
 .table-container { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
-th { padding: 14px; color: var(--neon-cyan); font-weight: 600; border-bottom: 2px solid rgba(0,242,254,0.1); font-size: 12px; }
-td { padding: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); font-size: 14px; }
+th { padding: 14px; color: var(--neon-cyan); font-weight: 600; border-bottom: 2px solid rgba(0,242,254,0.1); font-size: 12px; text-align: left; }
+td { padding: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); font-size: 14px; text-align: left; }
 tr.match-data-row:hover td { background: rgba(255, 255, 255, 0.01); }
 
 .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
@@ -85,9 +75,9 @@ tr.match-data-row:hover td { background: rgba(255, 255, 255, 0.01); }
 .badge.rejected { background: rgba(255, 23, 68, 0.1); color: var(--neon-red); border: 1px solid rgba(255,23,68,0.25); }
 
 /* ==========================================================================
-   5. FIELD SIMULATION, PROGRESS BARS & SKELETON
+   5. SIMULATIONS, CHARTS & ANIMATED SKELETONS
    ========================================================================== */
-.pitch-container { background: #06100a; padding: 8px; border-radius: 10px; border: 1px solid rgba(0,230,118,0.08); }
+.pitch-container { background: #050f09; padding: 8px; border-radius: 10px; border: 1px solid rgba(0,230,118,0.08); }
 .pitch { position: relative; width: 100%; height: 130px; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
 .center-line { position: absolute; left: 50%; top: 0; width: 1.5px; height: 100%; background: rgba(255,255,255,0.1); }
 .center-circle { position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 50%; transform: translate(-50%, -50%); }
@@ -99,25 +89,24 @@ tr.match-data-row:hover td { background: rgba(255, 255, 255, 0.01); }
 .chart-wrapper { position: relative; height: 160px; width: 100%; }
 
 .factor-bar-container { display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin-bottom: 12px; }
-.progress-track { width: 60%; height: 6px; background: rgba(255,255,255,0.04); border-radius: 8px; overflow: hidden; }
+.progress-track { width: 55%; height: 6px; background: rgba(255,255,255,0.04); border-radius: 8px; overflow: hidden; }
 .progress-fill { height: 100%; background: linear-gradient(90deg, var(--neon-cyan), #0062ff); border-radius: 8px; transition: width 0.4s ease; }
 
 .skeleton-bar { height: 14px; background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 25%); background-size: 200% 100%; animation: loading-skeleton 1.4s infinite; border-radius: 4px; }
 @keyframes loading-skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-.btn-primary { background: var(--neon-cyan); color: #020617; border: none; padding: 9px 18px; font-family: inherit; font-size: 13px; font-weight: 600; border-radius: 7px; cursor: pointer; transition: box-shadow 0.2s; }
-.btn-primary:hover { box-shadow: 0 0 12px rgba(0, 242, 254, 0.35); }
+.btn-primary { background: var(--neon-cyan); color: #020617; border: none; padding: 9px 18px; font-family: inherit; font-size: 13px; font-weight: 600; border-radius: 7px; cursor: pointer; }
 
 @media (max-width: 968px) { .grid-layout, .bottom-panel { grid-template-columns: 1fr; } }
 
 /* ==========================================================================
-   6. THAI GOVERNMENT PRINT CSS STANDARD
+   6. THAI PRINT STANDARDS
    ========================================================================== */
 @media print {
-    body { background: #fff !important; color: #000 !important; font-size: 12pt; }
+    body { background: #fff !important; color: #000 !important; }
     .main-header, .filter-bar, .btn-primary, #sync-timestamp, #passcode-overlay { display: none !important; }
     @page { size: A4 portrait; margin: 3.81cm 2.54cm 2.54cm 3.81cm; }
-    .panel-card { border: 1px solid #000; background: none !important; box-shadow: none !important; color: #000 !important; page-break-inside: avoid; margin-bottom: 15px; }
+    .panel-card { border: 1px solid #000; background: none !important; box-shadow: none !important; color: #000 !important; page-break-inside: avoid; }
     th { color: #000 !important; border-bottom: 2px solid #000; }
     td { border-bottom: 1px solid #000; color: #000 !important; }
 }

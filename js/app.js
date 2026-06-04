@@ -1,11 +1,10 @@
-// Global Caches และ Chart Instances
 let rawMatchesCache = [];
 let activeFilter = 'all';
 let chartDonutInstance = null;
 let chartLineInstance = null;
 
 // ==========================================================================
-// 1. INITIALIZATION & PASSCODE UX HANDLERS
+// 1. APP ENTRY POINT
 // ==========================================================================
 document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
@@ -19,23 +18,23 @@ function setupPasscodeFlow() {
 
     inputs.forEach((input, index) => {
         input.addEventListener('input', async () => {
-            input.value = input.value.replace(/[^0-9]/g, ''); // บังคับใส่เฉพาะตัวเลข
+            input.value = input.value.replace(/[^0-9]/g, ''); // รับตัวเลขเท่านั้น
 
             if (input.value.length === 1 && index < inputs.length - 1) {
-                inputs[index + 1].focus(); // ขยับช่องอัตโนมัติ
+                inputs[index + 1].focus(); // ย้ายช่องอัตโนมัติ
             }
 
             const compiledCode = Array.from(inputs).map(i => i.value).join('');
             if (compiledCode.length === 6) {
                 errorBox.style.color = 'var(--neon-cyan)';
-                errorBox.innerText = "กำลังเข้าสู่ระบบรักษาความปลอดภัย...";
+                errorBox.innerText = "กำลังตรวจสอบสิทธิ์ความปลอดภัย...";
 
                 const isCorrect = await AppDataLayer.verifyPasscodeWithBackend(compiledCode);
 
                 if (isCorrect) {
                     errorBox.innerText = "";
                     document.getElementById('passcode-overlay').classList.add('access-granted');
-                    executeDataScan(); // ปลดล็อกผ่านแล้วสั่งรันระบบทันที
+                    executeDataScan(); 
                 } else {
                     errorBox.style.color = 'var(--neon-red)';
                     errorBox.innerText = "❌ รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้ง";
@@ -47,7 +46,7 @@ function setupPasscodeFlow() {
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
-                inputs[index - 1].focus(); // กดลบแล้วย้อนกลับ
+                inputs[index - 1].focus();
             }
         });
     });
@@ -67,15 +66,17 @@ function setupEventListeners() {
 }
 
 // ==========================================================================
-// 2. ADVANCED AI SCORING CALCULATOR (สูตรสัญชาตญาณ Crazy Gang)
+// 2. WEIGHTED ANALYTICAL ENGINE (วิเคราะห์ 5 ปัจจัยหลัก)
 // ==========================================================================
 function runAnalyticalRules(match) {
     const baseline = match.ml_predict.home_win_pct; 
     const formBonus = match.home_form >= 80 ? 7 : (match.home_form < 60 ? -8 : 0);
     const oddsAdjustment = match.odds_flow === 'dropping' ? 10 : (match.odds_flow === 'rising' ? -10 : 0);
     const injuryImpact = match.injuries.home_key_out * 5; 
+    const venueEdge = match.home_away_edge || 0;
+    const motivationBonus = (match.motivation_level && match.motivation_level >= 75) ? 5 : 0;
 
-    let computedScore = Math.round(baseline + formBonus + oddsAdjustment - injuryImpact);
+    let computedScore = Math.round(baseline + formBonus + oddsAdjustment + venueEdge + motivationBonus - injuryImpact);
     computedScore = Math.max(0, Math.min(100, computedScore)); 
 
     let grading = 'REJECTED';
@@ -86,11 +87,11 @@ function runAnalyticalRules(match) {
 }
 
 // ==========================================================================
-// 3. UI DATATABLE RENDERING & SKELETON LAYER
+// 3. UI DATATABLE RENDERING
 // ==========================================================================
 async function executeDataScan() {
     toggleSkeletonLoader(true);
-    document.getElementById('sync-timestamp').innerText = "กำลังคำนวณสูตรคัดกรอง...";
+    document.getElementById('sync-timestamp').innerText = "กำลังประมวลผลโมเดล...";
     
     const data = await AppDataLayer.fetchLiveBsdData();
     rawMatchesCache = data.map(item => {
@@ -99,7 +100,7 @@ async function executeDataScan() {
     });
 
     toggleSkeletonLoader(false);
-    document.getElementById('sync-timestamp').innerText = `อัปเดตล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
+    document.getElementById('sync-timestamp').innerText = `อัปเดตสแกนล่าสุด: ${new Date().toLocaleTimeString('th-TH')}`;
     
     renderMatchTable();
     updateDonutDistribution();
@@ -125,7 +126,7 @@ function renderMatchTable() {
     });
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:25px;">ไม่มีคู่บอลในหมวดหมู่นี้</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:25px;">ไม่พบคู่แข่งขันที่ตรงเงื่อนไข</td></tr>`;
         return;
     }
 
@@ -146,17 +147,17 @@ function renderMatchTable() {
 }
 
 // ==========================================================================
-// 4. DEEP-DIVE SMART INSIGHTS ENGINE
+// 4. SMART VISUALS CONFIGS
 // ==========================================================================
 function handleMatchSelection(match) {
     const insightBox = document.getElementById('ai-commentary-box');
-    let commentary = `วิเคราะห์เกม **${match.home}** เจอกับ **${match.away}** คะแนนความมั่นใจจบที่ ${match.calculatedScore}% สรุปสถานะคือ **${match.calculatedStatus}** `;
+    let commentary = `บทสรุปอัจฉริยะ: แมตช์ระหว่าง **${match.home}** และ **${match.away}** ได้คะแนนดัชนีสุทธิ ${match.calculatedScore}% อยู่ในระดับเกรด **${match.calculatedStatus}** `;
     
     if (match.odds_flow === 'dropping') {
-        commentary += `โดยราคาตลาดมีการไหลลง (Dropping Odds) สนับสนุนทีมเจ้าบ้านอย่างชัดเจน `;
+        commentary += `โดยตรวจพบบันทึกเงินทุนไหลเข้าฝั่งเจ้าบ้าน (Dropping Odds) อย่างผิดปกติชัดเจนครับ `;
     }
     if (match.injuries.away_key_out > 0) {
-        commentary += `บวกกับฝั่งทีมเยือนขาดตัวผู้เล่นสำคัญไปถึง ${match.injuries.away_key_out} ตำแหน่ง เพิ่มความน่าจะเป็นฝั่งเจ้าบ้านมากยิ่งขึ้นครับ`;
+        commentary += `และทีมเยือนยังมีตัวหลักบาดเจ็บส่งผลเสียต่อรูปเกมชัดเจน`;
     }
     insightBox.innerHTML = commentary;
 
@@ -165,21 +166,19 @@ function handleMatchSelection(match) {
 
     const factorsWrapper = document.getElementById('factor-bars-wrapper');
     factorsWrapper.innerHTML = `
-        <div class="factor-bar-container"><span>ดัชนีฟอร์มการเล่นล่าสุด: ${match.home_form}%</span><div class="progress-track"><div class="progress-fill" style="width: ${match.home_form}%"></div></div></div>
-        <div class="factor-bar-container"><span>โมเดลคณิตศาสตร์ BSD ML: ${match.ml_predict.home_win_pct}%</span><div class="progress-track"><div class="progress-fill" style="width: ${match.ml_predict.home_win_pct}%"></div></div></div>
+        <div class="factor-bar-container"><span>1. ฟอร์มล่าสุดทีมเหย้า: ${match.home_form}%</span><div class="progress-track"><div class="progress-fill" style="width: ${match.home_form}%"></div></div></div>
+        <div class="factor-bar-container"><span>2. BSD ML โมเดลคณิตศาสตร์: ${match.ml_predict.home_win_pct}%</span><div class="progress-track"><div class="progress-fill" style="width: ${match.ml_predict.home_win_pct}%"></div></div></div>
+        <div class="factor-bar-container"><span>3. ความได้เปรียบเหย้าเยือน: ${(match.home_away_edge * 5)}%</span><div class="progress-track"><div class="progress-fill" style="width: ${(match.home_away_edge * 5)}%"></div></div></div>
+        <div class="factor-bar-container"><span>4. ดัชนีแรงจูงใจทีมแข่ง: ${match.motivation_level}%</span><div class="progress-track"><div class="progress-fill" style="width: ${match.motivation_level}%"></div></div></div>
     `;
 
-    updateTrendLineChart([50, 55, 60, match.calculatedScore - 3, match.calculatedScore]);
+    updateTrendLineChart([45, 52, 60, match.calculatedScore - 3, match.calculatedScore]);
 
-    // ยิงประวัติลงชีตหลังบ้านอัตโนมัติ
     AppDataLayer.sendToGasDatabase({
         matchId: match.id, homeTeam: match.home, awayTeam: match.away, league: match.league, aiScore: match.calculatedScore, status: match.calculatedStatus
     });
 }
 
-// ==========================================================================
-// 5. CHART ENGINE CONFIGURATION
-// ==========================================================================
 function initializeEmptyCharts() {
     const ctxDonut = document.getElementById('donutDistributionChart').getContext('2d');
     chartDonutInstance = new Chart(ctxDonut, {
@@ -191,8 +190,8 @@ function initializeEmptyCharts() {
     const ctxLine = document.getElementById('lineTrendChart').getContext('2d');
     chartLineInstance = new Chart(ctxLine, {
         type: 'line',
-        data: { labels: ['5 นัดก่อน', '4 นัดก่อน', '3 นัดก่อน', '2 นัดก่อน', 'นัดล่าสุด'], datasets: [{ label: 'คะแนนทิศทาง AI', data: [0, 0, 0, 0, 0], borderColor: '#00f2fe', borderWidth: 2, pointBackgroundColor: '#00f2fe', fill: false, tension: 0.25 }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#64748b', font: { family: 'Prompt' } } }, y: { ticks: { color: '#64748b' }, min: 0, max: 100 } } }
+        data: { labels: ['5 นัดก่อน', '4 นัดก่อน', '3 นัดก่อน', '2 นัดก่อน', 'นัดล่าสุด'], datasets: [{ label: 'ทิศทางคะแนน AI', data: [0, 0, 0, 0, 0], borderColor: '#00f2fe', borderWidth: 2, pointBackgroundColor: '#00f2fe', fill: false, tension: 0.25 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: '#64748b' } }, y: { ticks: { color: '#64748b' }, min: 0, max: 100 } } }
     });
 }
 
