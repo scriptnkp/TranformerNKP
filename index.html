@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Match Scanner — ระบบวิเคราะห์และทายผลบอลล่วงหน้า</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Teko:wght@400;500;600;700&display=swap">
-    
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -25,13 +24,13 @@
                 </div>
             </div>
             <div class="hdr-flow">
-                <div class="flow-step"><i class="ti ti-calendar-event" aria-hidden="true"></i>Fixtures</div>
+                <div class="flow-step">Fixtures</div>
                 <div class="flow-arrow">→</div>
-                <div class="flow-step"><i class="ti ti-brain" aria-hidden="true"></i>AI Scan</div>
+                <div class="flow-step">AI Scan</div>
                 <div class="flow-arrow">→</div>
-                <div class="flow-step"><i class="ti ti-chart-bar" aria-hidden="true"></i>DataPack</div>
+                <div class="flow-step">DataPack</div>
                 <div class="flow-arrow">→</div>
-                <div class="flow-step"><i class="ti ti-search" aria-hidden="true"></i>Price Check</div>
+                <div class="flow-step">Price Check</div>
             </div>
         </div>
 
@@ -46,10 +45,8 @@
                         </div>
                     </div>
                     <div class="scanner-meta">
-                        <div class="update-time"><i class="ti ti-refresh" aria-hidden="true"></i><span id="scan-time">อัปเดตล่าสุด --:--</span></div>
-                        <button class="filter-btn" id="btn-refresh" style="display:flex;align-items:center;gap:4px">
-                            <i class="ti ti-refresh" aria-hidden="true" style="font-size:12px"></i>รีเฟรช
-                        </button>
+                        <div class="update-time"><span id="scan-time">อัปเดตล่าสุด --:--</span></div>
+                        <button class="filter-btn" id="btn-refresh">รีเฟรช</button>
                     </div>
                 </div>
 
@@ -61,28 +58,28 @@
                     <button class="filter-btn" data-filter-type="league" data-value="SPA LA">La Liga</button>
                     <button class="filter-btn" data-filter-type="league" data-value="ITA SA">Serie A</button>
                     <button class="filter-btn" data-filter-type="league" data-value="FRA LI">Ligue 1</button>
-                    <span class="filter-label" style="margin-left:8px">AI Score:</span>
-                    <button class="filter-btn" data-filter-type="score" data-value="ALL" style="background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.3);color:#93c5fd">ทั้งหมด</button>
+                    <span class="filter-label" style="margin-left:auto">AI Score:</span>
+                    <button class="filter-btn" data-filter-type="score" data-value="ALL">ทั้งหมด</button>
                     <button class="filter-btn" data-filter-type="score" data-value="HIGH">สูง 70+</button>
                     <button class="filter-btn" data-filter-type="score" data-value="MED">กลาง 40-69</button>
-                    <input class="search-box" type="text" placeholder="🔍 ค้นหาทีม..." id="search-input">
+                    <input class="search-box" type="text" placeholder="🔍 ค้นหาทีม...">
                 </div>
 
                 <div style="overflow-x:auto">
                     <table class="match-table" id="match-table">
                         <thead>
                             <tr>
-                                <th>เวลา</th>
+                                <th style="width:70px">เวลา</th>
                                 <th>คู่แข่งขัน</th>
-                                <th>ลีก</th>
-                                <th style="text-align:center">AI SCORE</th>
-                                <th style="text-align:center">สถานะ</th>
+                                <th style="width:90px">ลีก</th>
+                                <th style="text-align:center;width:100px">AI SCORE</th>
+                                <th style="text-align:center;width:110px">สถานะ</th>
                             </tr>
                         </thead>
                         <tbody id="match-tbody">
                             <tr>
-                                <td colspan="5" style="text-align:center;padding:2rem;color:rgba(148,163,184,0.5);font-size:0.8rem">
-                                    กำลังโหลดข้อมูล...
+                                <td colspan="5" style="text-align:center;padding:3rem;color:rgba(148,163,184,0.4)">
+                                    กำลังดึงข้อมูลสถิติสด...
                                 </td>
                             </tr>
                         </tbody>
@@ -99,18 +96,18 @@
 
             <div class="right-col">
                 <div class="mini-card" id="dist-card">
-                    <div class="mini-card-title">AI SCORE DISTRIBUTION</div>
+                    <div class="mini-card-title" id="dist-title">AI SCORE DISTRIBUTION</div>
                     <div class="dist-donut">
-                        <canvas id="donutChart" width="110" height="110" role="img" aria-label="Distribution of AI scores"></canvas>
+                        <canvas id="donutChart" width="110" height="110"></canvas>
                         <div class="dist-center">
                             <div class="dist-num" id="total-matches">0</div>
-                            <div class="dist-label">คู่</div>
+                            <div class="dist-label" id="dist-center-label">คู่</div>
                         </div>
                     </div>
                     <div class="dist-legend">
-                        <div class="dist-item"><div class="dist-name"><div class="dist-dot" style="background:#4ade80"></div>HIGH (70-100)</div><div class="dist-pct" id="pct-high">0%</div></div>
-                        <div class="dist-item"><div class="dist-name"><div class="dist-dot" style="background:#fbbf24"></div>MEDIUM (40-69)</div><div class="dist-pct" id="pct-med">0%</div></div>
-                        <div class="dist-item"><div class="dist-name"><div class="dist-dot" style="background:#f87171"></div>LOW (0-39)</div><div class="dist-pct" id="pct-low">0%</div></div>
+                        <div class="dist-item"><div class="dist-name" id="dist-lbl-1"><div class="dist-dot" style="background:#4ade80"></div>HIGH (70-100)</div><div class="dist-pct" id="pct-high">0%</div></div>
+                        <div class="dist-item"><div class="dist-name" id="dist-lbl-2"><div class="dist-dot" style="background:#fbbf24"></div>MEDIUM (40-69)</div><div class="dist-pct" id="pct-med">0%</div></div>
+                        <div class="dist-item"><div class="dist-name" id="dist-lbl-3"><div class="dist-dot" style="background:#f87171"></div>LOW (0-39)</div><div class="dist-pct" id="pct-low">0%</div></div>
                     </div>
                 </div>
 
@@ -120,65 +117,26 @@
                 </div>
 
                 <div class="tactical-card">
-                    <div class="card-title">TACTICAL OVERVIEW</div>
-                    <div class="tac-formations">
-                        <div class="tac-field">
-                            <div class="tac-label">4-2-3-1</div>
-                            <svg viewBox="0 0 80 100" width="80" height="100" style="background:rgba(34,197,94,0.08);border-radius:6px;border:0.5px solid rgba(34,197,94,0.15)">
-                                <rect width="80" height="100" fill="none" stroke="rgba(34,197,94,0.2)" stroke-width="0.5"/>
-                                <line x1="0" y1="50" x2="80" y2="50" stroke="rgba(34,197,94,0.15)" stroke-width="0.5"/>
-                                <circle cx="40" cy="50" r="12" fill="none" stroke="rgba(34,197,94,0.15)" stroke-width="0.5"/>
-                                <circle cx="40" cy="88" r="5" fill="#3b82f6" opacity="0.9"/>
-                                <circle cx="16" cy="72" r="4" fill="#60a5fa" opacity="0.8"/>
-                                <circle cx="32" cy="72" r="4" fill="#60a5fa" opacity="0.8"/>
-                                <circle cx="48" cy="72" r="4" fill="#60a5fa" opacity="0.8"/>
-                                <circle cx="64" cy="72" r="4" fill="#60a5fa" opacity="0.8"/>
-                                <circle cx="24" cy="54" r="4" fill="#93c5fd" opacity="0.8"/>
-                                <circle cx="56" cy="54" r="4" fill="#93c5fd" opacity="0.8"/>
-                                <circle cx="16" cy="36" r="4" fill="#bfdbfe" opacity="0.9"/>
-                                <circle cx="32" cy="30" r="4" fill="#bfdbfe" opacity="0.9"/>
-                                <circle cx="48" cy="30" r="4" fill="#bfdbfe" opacity="0.9"/>
-                                <circle cx="64" cy="36" r="4" fill="#bfdbfe" opacity="0.9"/>
-                                <circle cx="40" cy="14" r="4" fill="#eff6ff" opacity="0.9"/>
-                            </svg>
+                    <div class="card-title" id="tactical-title">TACTICAL OVERVIEW</div>
+                    <div id="tactical-pitch-container">
                         </div>
-                        <div class="tac-field">
-                            <div class="tac-label">4-3-3</div>
-                            <svg viewBox="0 0 80 100" width="80" height="100" style="background:rgba(239,68,68,0.06);border-radius:6px;border:0.5px solid rgba(239,68,68,0.15)">
-                                <rect width="80" height="100" fill="none" stroke="rgba(239,68,68,0.2)" stroke-width="0.5"/>
-                                <line x1="0" y1="50" x2="80" y2="50" stroke="rgba(239,68,68,0.15)" stroke-width="0.5"/>
-                                <circle cx="40" cy="50" r="12" fill="none" stroke="rgba(239,68,68,0.15)" stroke-width="0.5"/>
-                                <circle cx="40" cy="88" r="5" fill="#ef4444" opacity="0.9"/>
-                                <circle cx="16" cy="72" r="4" fill="#f87171" opacity="0.8"/>
-                                <circle cx="32" cy="72" r="4" fill="#f87171" opacity="0.8"/>
-                                <circle cx="48" cy="72" r="4" fill="#f87171" opacity="0.8"/>
-                                <circle cx="64" cy="72" r="4" fill="#f87171" opacity="0.8"/>
-                                <circle cx="24" cy="52" r="4" fill="#fca5a5" opacity="0.8"/>
-                                <circle cx="40" cy="48" r="4" fill="#fca5a5" opacity="0.8"/>
-                                <circle cx="56" cy="52" r="4" fill="#fca5a5" opacity="0.8"/>
-                                <circle cx="16" cy="26" r="4" fill="#fecaca" opacity="0.9"/>
-                                <circle cx="40" cy="20" r="4" fill="#fecaca" opacity="0.9"/>
-                                <circle cx="64" cy="26" r="4" fill="#fecaca" opacity="0.9"/>
-                            </svg>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
 
         <div class="bottom-grid">
             <div class="form-card">
-                <div class="card-title">FORM GUIDE <span style="color:rgba(148,163,184,0.4);font-weight:400">(5 นัดล่าสุด)</span></div>
+                <div class="card-title" id="form-title">FORM GUIDE <span style="color:rgba(148,163,184,0.4);font-weight:400">(5 นัดล่าสุด)</span></div>
                 <div class="form-guide" id="form-guide"></div>
             </div>
             <div class="trend-card">
-                <div class="card-title">TREND GRAPH <span style="color:rgba(148,163,184,0.4);font-weight:400">(AI SCORE)</span></div>
-                <div class="trend-legend">
+                <div class="card-title" id="trend-title">TREND GRAPH <span style="color:rgba(148,163,184,0.4);font-weight:400">(AI SCORE)</span></div>
+                <div class="trend-legend" id="trend-legend-container">
                     <div class="trend-item"><div class="trend-dot" style="background:#3b82f6"></div>ค่าเฉลี่ย AI Score</div>
                     <div class="trend-item"><div class="trend-dot" style="background:#22c55e"></div>คู่ที่ผ่าน</div>
                 </div>
                 <div style="position:relative;height:110px">
-                    <canvas id="trendChart" role="img" aria-label="AI Score trend over past 6 days"></canvas>
+                    <canvas id="trendChart"></canvas>
                 </div>
             </div>
             <div class="league-card">
@@ -189,7 +147,6 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-    
     <script src="js/app.js"></script>
 </body>
 </html>
