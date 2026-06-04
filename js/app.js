@@ -29,17 +29,16 @@ const MATCHES_BASE = [
 class FootballAPIService {
     /**
      * ดึงข้อมูล Match และค่าการวิเคราะห์จาก API
-     * @returns {Promise<Array>}
      */
     static async fetchScannedMatches() {
         try {
-            // [NOTE] เมื่อได้รายละเอียด Endpoint/API Key ของ BSD (Bzzoiro Sports Data) ที่แน่นอนแล้ว ให้แทนที่ URL ด้านล่างนี้
-            //ตัวอย่าง: const response = await fetch('https://api.bzzoiro.com/v1/scan?predictions=true');
+            // [NOTE] เมื่อได้รายละเอียด Endpoint/API Key ของ BSD (Bzzoiro Sports Data) ที่แน่นอนแล้ว ให้ใส่ URL ตรงนี้
+            // const response = await fetch('https://api.bzzoiro.com/v1/scan?predictions=true');
             // if (!response.ok) throw new Error('API request failed');
             // const apiData = await response.json();
             // return this.mapToAppSchema(apiData);
 
-            // ปัจจุบันส่งค่า Mock กลับมาแบบเสมือนจริง (Asynchronous Flow) ตามหลัก Simplicity First
+            // จำลองการดึงแบบ Asynchronous เสมือนการยิง API จริง
             return new Promise((resolve) => {
                 setTimeout(() => {
                     const dynamicMatches = MATCHES_BASE.map(m => ({
@@ -51,15 +50,11 @@ class FootballAPIService {
             });
         } catch (error) {
             console.error("APIService Error:", error);
-            return MATCHES_BASE; // Fallback ปลอดภัยเมื่อเกิด Error
+            return MATCHES_BASE;
         }
     }
 
-    /**
-     * ทำหน้าที่แปลง Data Structure จากโครงสร้าง API ภายนอกให้เข้ากับ UI Contract ของเรา (Data Normalization)
-     */
     static mapToAppSchema(apiData) {
-        // [TODO] ทำการ Map Data Field ให้สอดคล้องกันเมื่อได้ JSON Schema ตัวจริงจากทางผู้ให้บริการ BSD
         return apiData;
     }
 }
@@ -268,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Event Delegation สำหรับปุ่ม Filter เพื่อให้สอดคล้องกับโครงสร้างที่ย้ายมาข้างนอก
+    // Event Delegation ฟังก์ชันคลิกปุ่มกรอง
     document.querySelector('.filter-row').addEventListener('click', (e) => {
         const btn = e.target.closest('.filter-btn');
         if (!btn) return;
@@ -283,13 +278,16 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMatches();
     });
 
+    // ค้นหาทีมแบบ Real-time
     document.getElementById('search-input').addEventListener('input', (e) => {
         filters.search = e.target.value;
         renderMatches();
     });
 
+    // ปุ่มรีเฟรชข้อมูล
     document.getElementById('btn-refresh').addEventListener('click', loadData);
 
+    // ฟังก์ชันส่ง Prompt วิเคราะห์คู่บอลเมื่อผู้ใช้คลิกแถวตาราง
     document.getElementById('match-tbody').addEventListener('click', (e) => {
         const row = e.target.closest('.match-row');
         if (!row) return;
