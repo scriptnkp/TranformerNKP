@@ -68,6 +68,7 @@ function predictExactScore(homeProb, awayProb) {
 }
 
 // --- SERVICE LAYER ---
+// --- SERVICE LAYER ---
 class FootballAPIService {
     static async fetchScannedMatches() {
         if (!API_FOOTBALL_CONFIG.ENABLE_REAL_API || API_FOOTBALL_CONFIG.API_KEY === 'YOUR_API_FOOTBALL_KEY_HERE') return this.executeFallbackProcess();
@@ -75,11 +76,27 @@ class FootballAPIService {
             const response = await fetch(`${API_FOOTBALL_CONFIG.BASE_URL}/fixtures?date=${selectedDate}`, {
                 method: 'GET', headers: { 'x-apisports-key': API_FOOTBALL_CONFIG.API_KEY }
             });
+            
             if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
             const rawData = await response.json();
-            if (!rawData.response || rawData.response.length === 0) return [];
-            return this.mapAndAnalyzeData(rawData.response.slice(0, 100), true); // ดึงสูงสุด 100 คู่ เพื่อทำแบ่งหน้า
-        } catch (error) { return this.executeFallbackProcess(); }
+            
+            // 1. ดักจับ Error แจ้งเตือนจากเซิร์ฟเวอร์ (เช่น Key มีปัญหา)
+            if (rawData.errors && Object.keys(rawData.errors).length > 0) {
+                console.error("🚨 API-Sports Error:", rawData.errors);
+                return this.executeFallbackProcess();
+            }
+
+            // 2. ดักจับกรณีที่ "ไม่มีบอลเตะในวันนั้นเลย" ให้แสดงข้อมูลจำลองแทนหน้าเว็บขาวโล่ง
+            if (!rawData.response || rawData.response.length === 0) {
+                console.warn("ℹ️ ไม่มีโปรแกรมแข่งในวันที่เลือก ระบบกำลังสลับไปใช้ฐานข้อมูลจำลอง (Fallback)");
+                return this.executeFallbackProcess(); 
+            }
+
+            return this.mapAndAnalyzeData(rawData.response.slice(0, 100), true); 
+        } catch (error) { 
+            console.error("❌ Connection Error:", error);
+            return this.executeFallbackProcess(); 
+        }
     }
 
     static async fetchMatchInsights(homeId, awayId) {
