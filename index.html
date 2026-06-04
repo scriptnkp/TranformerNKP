@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crazy Gang Football - AI Match Scanner Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- ชาร์ตสากล Chart.js สำหรับเรนเดอร์กราฟ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+
+        <!-- ==========================================
+           SECTION A: SECURITY LOCK OVERLAY
+           ========================================== -->
+        <div id="passcode-overlay" class="passcode-screen">
+            <div class="passcode-container">
+                <div class="lock-icon">🔒</div>
+                <h2>CRAZY GANG SECURITY</h2>
+                <p>กรุณาใส่รหัสผ่าน 6 หลักเพื่อเข้าใช้งานระบบ</p>
+                <div class="passcode-inputs">
+                    <input type="password" maxlength="1" class="code-input" autofocus>
+                    <input type="password" maxlength="1" class="code-input">
+                    <input type="password" maxlength="1" class="code-input">
+                    <input type="password" maxlength="1" class="code-input">
+                    <input type="password" maxlength="1" class="code-input">
+                    <input type="password" maxlength="1" class="code-input">
+                </div>
+                <div id="passcode-error-msg" class="error-text"></div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+           SECTION B: HEADER ZONE
+           ========================================== -->
+        <header class="main-header">
+            <div class="logo-area">
+                <h1>CRAZY GANG MATCH SCANNER</h1>
+                <p>ระบบคัดกรองคู่บอลอัจฉริยะแบบเรียบง่ายและทันสมัย</p>
+            </div>
+            <div class="action-area">
+                <span id="sync-timestamp" class="timestamp">สถานะ: รอการปลดล็อกระบบ</span>
+                <button id="btn-fetch-data" class="btn-primary">🔄 สแกนข้อมูลสดจาก BSD</button>
+            </div>
+        </header>
+
+        <!-- ==========================================
+           SECTION C: SMART FILTER BAR
+           ========================================== -->
+        <div class="filter-bar">
+            <button class="filter-pill active" data-filter="all">คู่บอลทั้งหมด</button>
+            <button class="filter-pill" data-filter="ACTIVE">🟢 คู่เด็ด ACTIVE</button>
+            <button class="filter-pill" data-filter="WATCHLIST">🔵 เฝ้าระวัง WATCHLIST</button>
+            <button class="filter-pill" data-filter="dropping">📉 ราคาไหลผิดปกติ</button>
+        </div>
+
+        <!-- ==========================================
+           SECTION D: DATA GRID WORKSPACE
+           ========================================== -->
+        <div class="grid-layout">
+            <!-- ซีกซ้าย: ตารางข้อมูล -->
+            <main class="left-panel">
+                <div class="panel-card">
+                    <div class="card-header">
+                        <h2>AI MATCH SCANNER <span class="sub-title">PRE-MATCH FILTERING SYSTEM</span></h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="match-data-table">
+                            <thead>
+                                <tr>
+                                    <th>เวลา</th>
+                                    <th>คู่แข่งขัน</th>
+                                    <th>ลีก</th>
+                                    <th>AI SCORE</th>
+                                    <th>สถานะการคัดกรอง</th>
+                                </tr>
+                            </thead>
+                            <tbody id="match-table-body">
+                                <!-- ข้อมูลจริงหรือ Skeleton จะถูกฉีดที่นี่ -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ซีกขวา: กล่องข้อมูลวิเคราะห์เจาะลึก -->
+            <aside class="right-panel">
+                <!-- AI Smart Insights (สรุปเกมใน 1 ประโยค แก้ปัญหาสับสน) -->
+                <div class="panel-card insight-card">
+                    <h3>💡 AI SMART INSIGHTS</h3>
+                    <div id="ai-commentary-box" class="insight-content">
+                        กรุณาคลิกเลือกคู่บอลที่คุณสนใจเพื่ออ่านบทสรุปเชิงลึกทันที
+                    </div>
+                </div>
+
+                <!-- AI Distribution Chart -->
+                <div class="panel-card">
+                    <h3>📊 AI SCORE DISTRIBUTION</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="donutDistributionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tactical Field Simulation -->
+                <div class="panel-card">
+                    <h3>สนามจำลองแผนการเล่น (TACTICAL OVERVIEW)</h3>
+                    <div class="pitch-container">
+                        <div class="pitch">
+                            <div class="line center-line"></div>
+                            <div class="line center-circle"></div>
+                            <div class="formation-display home-side" id="txt-home-formation">HOME</div>
+                            <div class="formation-display away-side" id="txt-away-formation">AWAY</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- ==========================================
+           SECTION E: BOTTOM GRAPH & FACTORS PANEL
+           ========================================== -->
+        <section class="bottom-panel">
+            <div class="panel-card">
+                <h3>📈 TREND GRAPH (AI SCORE MOVEMENT)</h3>
+                <div class="chart-wrapper">
+                    <canvas id="lineTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="panel-card">
+                <h3>🎯 AI KEY FACTORS ANALYSIS</h3>
+                <div id="factor-bars-wrapper" class="factors-list">
+                    <p class="text-muted">เลือกคู่แข่งขันเพื่อดูสถิติตัวคูณคะแนน</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SKELETON SCREEN TEMPLATE -->
+    <template id="skeleton-row-template">
+        <tr class="skeleton-row">
+            <td><div class="skeleton-bar" style="width: 50px;"></div></td>
+            <td><div class="skeleton-bar" style="width: 180px;"></div></td>
+            <td><div class="skeleton-bar" style="width: 60px;"></div></td>
+            <td><div class="skeleton-bar" style="width: 40px;"></div></td>
+            <td><div class="skeleton-bar" style="width: 80px;"></div></td>
+        </tr>
+    </template>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
