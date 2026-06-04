@@ -1,9 +1,9 @@
 /**
  * AI Football Prediction Scanner - Core Application Logic
- * Version: 7.1 (Fixed ReferenceError: buildScoreRing)
+ * Version: 7.2 (Dynamic League Filters & Full Synchronization)
  */
 
-// --- 1. API CONFIGURATION (API-FOOTBALL) ---
+// --- 1. API CONFIGURATION ---
 const API_FOOTBALL_CONFIG = {
     BASE_URL: 'https://v3.football.api-sports.io',
     API_KEY: '8d7bd5b4e39d67ac804b96a08eac5723', // คีย์ของคุณ
@@ -24,14 +24,11 @@ const LOGOS = {
 };
 
 const FLAG = {'ENG PR':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','GER BL':'🇩🇪','SPA LA':'🇪🇸','ITA SA':'🇮🇹','FRA LI':'🇫🇷','POR LP':'🇵🇹', 'UEFA CL':'🇪🇺'};
-const LEAGUE_FULL = {'ENG PR':'Premier League','GER BL':'Bundesliga','SPA LA':'La Liga','ITA SA':'Serie A','FRA LI':'Ligue 1','POR LP':'Primeira Liga', 'UEFA CL':'Champions League'};
 
 const MATCHES_BASE = [
     {id: 1, time:'18:30',home:'เรอัล มาดริด',away:'ยูเวนตุส',homeId:541,awayId:496,league:'UEFA CL',odds:{h:1.75,d:3.6,a:4.5},openingOdds:{h:1.80,d:3.5,a:4.2},injury:'ไม่มีรายงานตัวเจ็บเพิ่ม'},
     {id: 2, time:'19:00',home:'เปแอสเช',away:'บาเยิร์น',homeId:85,awayId:157,league:'UEFA CL',odds:{h:2.4,d:3.3,a:2.8},openingOdds:{h:2.60,d:3.2,a:2.6},injury:'เปแอสเช (รอเช็กฟิต)'},
-    {id: 3, time:'20:00',home:'เชลซี',away:'นิวคาสเซิล',homeId:49,awayId:34,league:'ENG PR',odds:{h:1.85,d:3.4,a:4.2},openingOdds:{h:2.10,d:3.3,a:3.8},injury:'ไม่มีรายงานตัวเจ็บเพิ่ม'},
-    {id: 4, time:'20:30',home:'บาร์เซโลน่า',away:'เรอัล โซเซียดัด',homeId:529,awayId:548,league:'SPA LA',odds:{h:1.6,d:3.8,a:5.5},openingOdds:{h:1.62,d:3.7,a:5.4},injury:'เปโดร (แขวน)'},
-    {id: 5, time:'21:00',home:'ดอร์ทมุนด์',away:'ไลป์ซิก',homeId:165,awayId:173,league:'GER BL',odds:{h:2.1,d:3.2,a:3.6},openingOdds:{h:2.15,d:3.2,a:3.5},injury:''}
+    {id: 3, time:'20:00',home:'เชลซี',away:'นิวคาสเซิล',homeId:49,awayId:34,league:'ENG PR',odds:{h:1.85,d:3.4,a:4.2},openingOdds:{h:2.10,d:3.3,a:3.8},injury:'ไม่มีรายงานตัวเจ็บเพิ่ม'}
 ];
 
 const LOGO_HIGHLIGHT_STYLE = "background-color: rgba(255, 255, 255, 0.85); border-radius: 50%; padding: 2px; box-shadow: 0 0 5px rgba(255,255,255,0.2);";
@@ -186,6 +183,56 @@ class FootballAPIService {
             setTimeout(() => { resolve(this.mapAndAnalyzeData(MATCHES_BASE, false)); }, 300);
         });
     }
+}
+
+// --- [ADDED] ฟังก์ชันเปลี่ยนปุ่มตัวกรองลีคให้เป็น Dynamic ---
+function renderDynamicLeagueFilters() {
+    const filterRow = document.querySelector('.filter-row');
+    if (!filterRow) return;
+
+    // 1. หาชื่อลีคที่ไม่ซ้ำกันจากตารางข้อมูล
+    const leagues = [...new Set(allMatches.map(m => m.league))].sort();
+
+    // 2. ลบปุ่มลีคเก่าทิ้งทั้งหมด
+    const existingLeagueBtns = filterRow.querySelectorAll('.filter-btn[data-filter-type="league"]');
+    existingLeagueBtns.forEach(btn => btn.remove());
+
+    // 3. หาจุดอ้างอิง (ป้ายคำว่า "ลีก:") เพื่อแทรกปุ่มใหม่เข้าไป
+    const leagueLabel = Array.from(filterRow.querySelectorAll('.filter-label')).find(el => el.textContent.trim() === 'ลีก:');
+    if (!leagueLabel) return;
+
+    // เคลียร์ค่าฟิลเตอร์หากเลือกลีคที่ไม่มีในวันนั้นแล้ว
+    if (filters.league !== 'ALL' && !leagues.includes(filters.league)) {
+        filters.league = 'ALL';
+    }
+
+    const buttonsToInsert = [];
+    
+    // สร้างปุ่ม "ทั้งหมด"
+    const allBtn = document.createElement('button');
+    allBtn.className = `filter-btn ${filters.league === 'ALL' ? 'active' : ''}`;
+    allBtn.setAttribute('data-filter-type', 'league');
+    allBtn.setAttribute('data-value', 'ALL');
+    allBtn.textContent = 'ทั้งหมด';
+    buttonsToInsert.push(allBtn);
+
+    // สร้างปุ่มตามลีคที่มีแข่งจริง
+    leagues.forEach(league => {
+        const btn = document.createElement('button');
+        btn.className = `filter-btn ${filters.league === league ? 'active' : ''}`;
+        btn.setAttribute('data-filter-type', 'league');
+        btn.setAttribute('data-value', league);
+        btn.title = league;
+        // ตัดชื่อลีคให้สั้นลงถ้าเกิน 15 ตัวอักษร เพื่อไม่ให้ปุ่มยาวเกินไป
+        btn.textContent = league.length > 15 ? league.substring(0, 13) + '..' : league;
+        buttonsToInsert.push(btn);
+    });
+
+    // แทรกปุ่มต่อจากป้าย "ลีก:"
+    let referenceNode = leagueLabel.nextSibling;
+    buttonsToInsert.forEach(btn => {
+        filterRow.insertBefore(btn, referenceNode);
+    });
 }
 
 // --- UI UPDATERS ---
@@ -363,7 +410,6 @@ function renderPremiumPitchSVG(match) {
     `;
 }
 
-// [ADDED] ฟังก์ชันผู้ช่วย: getScoreColor และ buildScoreRing
 function getScoreColor(score) {
     if (score >= 70) return { stroke: '#4ade80', text: '#4ade80', label: 'HIGH' };
     if (score >= 40) return { stroke: '#fbbf24', text: '#fbbf24', label: 'MED' };
@@ -425,7 +471,7 @@ function renderMatches() {
                     </div>
                 </div>
             </td>
-            <td><span class="league-badge">${FLAG[m.league] || ''} ${m.league}</span></td>
+            <td><span class="league-badge">${FLAG[m.league] || ''} ${m.league.substring(0, 15)}</span></td>
             <td style="text-align:center"><div class="ai-score-cell">${buildScoreRing(m.score)}</div></td>
             <td style="text-align:center"><span class="status-badge ${st.cls}">${dotHtml}${st.label}</span></td>
         </tr>`;
@@ -442,7 +488,7 @@ function renderLeagueBreakdown(data) {
     
     document.getElementById('league-list').innerHTML = sorted.map(([lg, ct]) =>
         `<div class="league-item">
-            <div class="league-name" style="width:75px">${FLAG[lg] || ''} ${lg.substring(0, 10)}</div>
+            <div class="league-name" style="width:75px" title="${lg}">${FLAG[lg] || ''} ${lg.substring(0, 10)}</div>
             <div class="league-bar-wrap"><div class="league-bar-fill" style="width:${Math.round(ct / max * 100)}%;background:${BAR_COLORS[lg] || '#3b82f6'}"></div></div>
             <div class="league-count">${ct}</div>
         </div>`
@@ -474,6 +520,7 @@ async function silentUpdateMatches() {
     const freshData = await FootballAPIService.fetchScannedMatches();
     if(freshData && freshData.length > 0) {
         allMatches = freshData;
+        renderDynamicLeagueFilters(); // อัปเดตลีคที่กดได้แบบออโต้ด้วยเผื่อมีคู่ใหม่แทรกมา
         renderMatches();
         const now = new Date();
         document.getElementById('scan-time').textContent = `อัปเดตล่าสุด ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -488,6 +535,9 @@ async function loadData() {
     
     const now = new Date();
     document.getElementById('scan-time').textContent = `อัปเดตล่าสุด ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    // [ADDED] เรียกใช้งานฟังก์ชันสร้างปุ่มลีค
+    renderDynamicLeagueFilters();
     
     renderMatches();
     if (allMatches.length > 0) { selectMatch(allMatches[0]); }
@@ -526,9 +576,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const btn = e.target.closest('.filter-btn');
         if (!btn) return;
         const type = btn.getAttribute('data-filter-type');
+        
+        // กรองการดึงข้อมูลเฉพาะประเภทที่กด
         filters[type] = btn.getAttribute('data-value');
+        
+        // ล้างปุ่ม active เฉพาะกลุ่มเดียวกัน
         btn.parentElement.querySelectorAll(`[data-filter-type="${type}"]`).forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        
         renderMatches();
     });
 
