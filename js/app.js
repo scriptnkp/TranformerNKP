@@ -1,6 +1,6 @@
 /**
  * AI Football Prediction Scanner - Core Application Logic
- * Version: 4.1 (Fixed ReferenceError & Seamless Fallback Activation)
+ * Version: 4.2 (Stable Logo CDN & Unified Layout)
  */
 
 // --- 1. API CONFIGURATION ---
@@ -10,24 +10,24 @@ const BSD_API_CONFIG = {
     ENABLE_REAL_API: true                                
 };
 
-// --- OFFICIAL LOGOS & METADATA ---
+// --- STABLE LOGOS CDN (อัปเดตลิงก์โลโก้ใหม่ที่เสถียร 100%) ---
 const LOGOS = {
-    'เชลซี': 'https://upload.wikimedia.org/wikipedia/en/cc/cc/Chelsea_FC.svg',
-    'นิวคาสเซิล': 'https://upload.wikimedia.org/wikipedia/en/5/56/Newcastle_United_FC_logo.svg',
-    'ดอร์ทมุนด์': 'https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg',
-    'ไลป์ซิก': 'https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2020_logo.svg',
-    'บาร์เซโลน่า': 'https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg',
-    'เรอัล โซเซียดัด': 'https://upload.wikimedia.org/wikipedia/en/f/f1/Real_Sociedad_logo.svg',
-    'เอซี มิลาน': 'https://upload.wikimedia.org/wikipedia/commons/d/d0/AC_Milan_crest.svg',
-    'อตาลันต้า': 'https://upload.wikimedia.org/wikipedia/en/b/b5/Atalanta_BC.svg',
-    'ลีออง': 'https://upload.wikimedia.org/wikipedia/en/c/c6/Olympique_Lyonnais.svg',
-    'มาร์กเซย': 'https://upload.wikimedia.org/wikipedia/commons/4/43/Olympique_de_Marseille_logo.svg',
-    'เบนฟิก้า': 'https://upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg',
-    'ปอร์โต': 'https://upload.wikimedia.org/wikipedia/en/4/4c/FC_Porto.svg',
-    'อาร์เซนอล': 'https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg',
-    'แมนซิตี้': 'https://upload.wikimedia.org/wikipedia/en/eb/eb/Manchester_City_FC_badge.svg',
-    'ลิเวอร์พูล': 'https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg',
-    'แมนยู': 'https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg'
+    'เชลซี': 'https://crests.football-data.org/61.png',
+    'นิวคาสเซิล': 'https://crests.football-data.org/67.png',
+    'ดอร์ทมุนด์': 'https://crests.football-data.org/4.png',
+    'ไลป์ซิก': 'https://crests.football-data.org/721.png',
+    'บาร์เซโลน่า': 'https://crests.football-data.org/81.png',
+    'เรอัล โซเซียดัด': 'https://crests.football-data.org/92.png',
+    'เอซี มิลาน': 'https://crests.football-data.org/98.png',
+    'อตาลันต้า': 'https://crests.football-data.org/108.png',
+    'ลีออง': 'https://crests.football-data.org/523.png',
+    'มาร์กเซย': 'https://crests.football-data.org/516.png',
+    'เบนฟิก้า': 'https://crests.football-data.org/1903.png',
+    'ปอร์โต': 'https://crests.football-data.org/503.png',
+    'อาร์เซนอล': 'https://crests.football-data.org/57.png',
+    'แมนซิตี้': 'https://crests.football-data.org/65.png',
+    'ลิเวอร์พูล': 'https://crests.football-data.org/64.png',
+    'แมนยู': 'https://crests.football-data.org/66.png'
 };
 
 const FLAG = {'ENG PR':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','GER BL':'🇩🇪','SPA LA':'🇪🇸','ITA SA':'🇮🇹','FRA LI':'🇫🇷','POR LP':'🇵🇹'};
@@ -42,7 +42,7 @@ const MATCHES_BASE = [
     {time:'22:00',home:'เบนฟิก้า',away:'ปอร์โต',league:'POR LP',score:61,odds:{h:2.0,d:3.3,a:3.8},openingOdds:{h:2.30,d:3.2,a:3.2},motivationFactor:1.3,injury:'',h2h:'เบนฟิก้า 3W-1D-2L',form:{h:['W','D','W','W','D'],a:['W','L','W','D','W']},formations:{home:'3-5-2',away:'4-3-3'}}
 ];
 
-// --- 2. SERVICE LAYER (LIVE API INTEGRATION) ---
+// --- 2. SERVICE LAYER ---
 class FootballAPIService {
     static async fetchScannedMatches() {
         if (!BSD_API_CONFIG.ENABLE_REAL_API) {
@@ -60,7 +60,7 @@ class FootballAPIService {
             const rawData = await response.json();
             return this.mapAndAnalyzeData(rawData.data || rawData);
         } catch (error) {
-            console.warn("⚠️ Switching to Fallback Simulation Engine:", error);
+            console.warn("⚠️ API Domain Not Found. Switching to Fallback Simulation Engine.");
             return this.executeFallbackProcess();
         }
     }
@@ -119,7 +119,6 @@ function selectMatch(match) {
     updateMatchTrendChart(match);
 }
 
-// [ADDED] เพิ่มฟังก์ชันสถานะป้ายชื่อสีที่ตกหล่นไปเพื่อแก้ไขอาการค้างตัวแดงบนหน้าแดชบอร์ด
 function getStatus(score) {
     if (score >= 70) return { cls: 'status-active', label: 'ACTIVE', dot: true };
     if (score >= 40) return { cls: 'status-watch', label: 'WATCHLIST', dot: false };
