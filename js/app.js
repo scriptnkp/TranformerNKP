@@ -5,13 +5,11 @@ const supabaseUrl = 'https://foplvudtvujxyxsibuck.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvcGx2dWR0dnVqeHl4c2lidWNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODgzMzYsImV4cCI6MjA5NjU2NDMzNn0.h-BNhShuEarCUA0ozpYm6g9rUKET6ddJSYrCLmCQavc';
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-// Global App State
 let RAW = [];
 let logs = [];
 let slocF = 'all';
 let currentPg = 'dash';
 
-// ฟังก์ชันเริ่มต้น (โหลดข้อมูล)
 async function initApp() {
   updateHdrStatus('กำลังโหลดข้อมูล...');
   try {
@@ -44,7 +42,6 @@ function avail() {
   return RAW.filter(x => !x.is_issued);
 }
 
-// ระบบเปลี่ยนหน้า
 function showPg(p) {
   document.querySelectorAll('.pg').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.nav-tab').forEach(x => x.classList.remove('on'));
@@ -55,7 +52,6 @@ function showPg(p) {
   if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('on');
   
   currentPg = p;
-  // เรียกใช้ฟังก์ชันจาก dashboard.js หรือ form.js
   const fn = { dash: renderDash, stock: renderStock, issue: renderIssue, log: renderLog, settings: () => {} };
   if (fn[p]) fn[p]();
   updateHdr();
@@ -71,13 +67,12 @@ function renderStock() {
   document.getElementById('stock-list').innerHTML = items.length ? items.map(i => `
     <div class="item ${i.is_issued ? 'issued' : ''}">
       <div class="item-top">
-        <span class="item-serial">${i.serial}</span>
+        <span class="item-serial">${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}</span>
         <span class="badge ${i.is_issued ? 'bg-out' : 'bg-ok'}">${i.is_issued ? 'เบิกแล้ว' : 'พร้อมเบิก'}</span>
       </div>
       <div class="item-desc">${i.description}</div>
       <div class="item-meta">
         <span class="badge bg-sloc">${i.sloc}</span>
-        <span style="font-size:10px;color:var(--color-text-tertiary)">${i.asset_no || '-'}</span>
         <span style="font-size:10px;color:var(--color-text-tertiary)">${i.mfr || '-'}</span>
       </div>
     </div>`).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ไม่มีรายการ</div>`;
@@ -93,7 +88,10 @@ function renderLog() {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
     return `
     <div class="log-item">
-      <div class="log-top"><span class="log-serial">${l.serial}</span><span class="log-time">${formattedTime}</span></div>
+      <div class="log-top">
+        <span class="log-serial">${l.serial} ${trInfo.asset_no ? ' / ' + trInfo.asset_no : ''}</span>
+        <span class="log-time">${formattedTime}</span>
+      </div>
       <div class="log-row"><i class="ti ti-package" style="font-size:12px" aria-hidden="true"></i>${(trInfo.description || '').split(',')[0].replace('TR. ', '')} · SLoc ${trInfo.sloc || '-'}</div>
       <div class="log-row"><i class="ti ti-user" style="font-size:12px" aria-hidden="true"></i>${l.req_name}${l.location ? ' · ' + l.location : ''}</div>
       ${l.gps ? `<div class="log-row" style="cursor:pointer" onclick="editGPS(${l.id}, '${l.gps}')"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i><span style="color:var(--color-info)">${l.gps}</span> <i class="ti ti-edit" style="font-size:11px;color:var(--color-text-tertiary)" aria-hidden="true"></i></div>` : ''}
@@ -112,14 +110,14 @@ async function editGPS(id, curGps) {
   }
 }
 
-// ระบบ Settings (นำเข้าไฟล์, ส่งออก, ล้างข้อมูล)
+// ระบบ Settings 
 async function importFile(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = async e => {
     const text = e.target.result;
-    const parsed = parseIQ09(text); // เรียกใช้ parseIQ09 แบบใหม่
+    const parsed = parseIQ09(text);
     if (parsed.length === 0) {
       document.getElementById('import-result').innerHTML = '<span style="color:var(--color-danger)">ไม่พบข้อมูลที่อ่านได้ กรุณาตรวจสอบรูปแบบไฟล์</span>';
       return;
@@ -127,13 +125,7 @@ async function importFile(input) {
     
     updateHdrStatus('กำลัง Upsert...');
     const dbPayload = parsed.map(p => ({
-      serial: p.serial, 
-      mat: p.mat, 
-      description: p.desc, 
-      sloc: p.sloc, 
-      asset_no: p.assetNo, 
-      mfr: p.mfr, 
-      import_date: p.date
+      serial: p.serial, mat: p.mat, description: p.desc, sloc: p.sloc, asset_no: p.assetNo, mfr: p.mfr, import_date: p.date
     }));
 
     const { error } = await _supabase.from('transformers').upsert(dbPayload, { onConflict: 'serial' });
@@ -148,30 +140,17 @@ async function importFile(input) {
   input.value = '';
 }
 
-// ฟังก์ชันแปลงไฟล์ IQ09 แบบหั่นคอลัมน์ด้วย "|" (แม่นยำกว่า Regex)
 function parseIQ09(text) {
   const lines = text.split('\n');
   const result = [];
   
   lines.forEach(line => {
-    if (!line.includes('|')) return; // ข้ามบรรทัดที่ไม่มีเส้นคั่นตาราง
-    
+    if (!line.includes('|')) return;
     const cols = line.split('|').map(c => c.trim());
-    
-    // เช็คว่าถ้าคอลัมน์ที่ 1 เป็นรหัสวัสดุ (ขึ้นต้นด้วย 1-) ให้เก็บข้อมูล
     if (cols[1] && cols[1].match(/^1-\d{2}/)) {
-      result.push({ 
-        mat: cols[1], 
-        desc: cols[2], 
-        sloc: cols[5], 
-        serial: cols[6], 
-        assetNo: cols[7],  // ดึงเลขประจำ 
-        mfr: cols[8],      // ดึงผู้ผลิต
-        date: cols[10]     // ดึงวันที่
-      });
+      result.push({ mat: cols[1], desc: cols[2], sloc: cols[5], serial: cols[6], assetNo: cols[7], mfr: cols[8], date: cols[10] });
     }
   });
-  
   return result;
 }
 
@@ -199,5 +178,4 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('on'), 2500);
 }
 
-// เริ่มต้นแอป
 initApp();
