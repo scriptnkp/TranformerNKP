@@ -8,11 +8,131 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <script src="app.js"></script>
+
+<h2 class="sr-only">ระบบเบิกจ่ายหม้อแปลงไฟฟ้า D060</h2>
+<div style="position:relative" id="root">
+<div class="app">
+  
+  <div class="hdr">
+    <div class="hdr-left">
+      <h1><i class="ti ti-bolt" aria-hidden="true" style="font-size:15px;margin-right:4px"></i>คลังหม้อแปลง D060</h1>
+      <p id="hdr-sub">กำลังเชื่อมต่อฐานข้อมูล...</p>
+    </div>
+    <div class="hdr-btn" onclick="showPg('settings')" aria-label="ตั้งค่า"><i class="ti ti-settings" aria-hidden="true"></i></div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-tab on" onclick="showPg('dash')"><i class="ti ti-chart-bar" aria-hidden="true"></i>สรุป</div>
+    <div class="nav-tab" onclick="showPg('stock')"><i class="ti ti-package" aria-hidden="true"></i>สต็อก</div>
+    <div class="nav-tab" onclick="showPg('issue')"><i class="ti ti-arrow-bar-right" aria-hidden="true"></i>เบิก</div>
+    <div class="nav-tab" onclick="showPg('log')"><i class="ti ti-history" aria-hidden="true"></i>ประวัติ</div>
+  </div>
+
+  <div class="pg on" id="pg-dash">
+    <div class="sec">
+      <div class="kpi-grid" id="kpi"></div>
+      <p class="sec-ttl">สรุปแยกตามที่เก็บสินค้า (SLoc)</p>
+      <div style="overflow-x:auto">
+        <table class="sloc-table" id="sloc-tbl"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-stock">
+    <div class="sec">
+      <div class="filter-row" id="sf"></div>
+      <div id="stock-list"></div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-issue">
+    <div class="sec">
+      <div class="form-card">
+        <h3><i class="ti ti-arrow-bar-right" aria-hidden="true" style="font-size:16px"></i>แบบฟอร์มเบิกจ่าย</h3>
+        <div class="fl">
+          <div class="fl-lbl">Serial No. *</div>
+          <select id="s-serial"><option value="">-- เลือก Serial No. --</option></select>
+        </div>
+        <div class="fl">
+          <div class="fl-lbl">ผู้เบิก *</div>
+          <input type="text" id="s-req" placeholder="ชื่อผู้เบิก / แผนก" />
+        </div>
+        <div class="fl">
+          <div class="fl-lbl">สถานที่ติดตั้ง</div>
+          <input type="text" id="s-loc" placeholder="ระบุสถานที่..." />
+        </div>
+        <div class="fl">
+          <div class="fl-lbl">พิกัด GPS</div>
+          <div class="gps-row">
+            <input type="text" id="s-gps" placeholder="lat, lng" readonly />
+            <button class="btn-gps" id="gps-btn" onclick="getGPS()"><i class="ti ti-current-location" aria-hidden="true"></i>ดึง GPS</button>
+          </div>
+        </div>
+        <div class="fl">
+          <div class="fl-lbl">หมายเหตุ</div>
+          <textarea id="s-note" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+        </div>
+        <button class="btn-primary" onclick="doIssue()">ยืนยันเบิกจ่าย</button>
+      </div>
+      <p class="sec-ttl">รายการพร้อมเบิก</p>
+      <div id="ready-list"></div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-log">
+    <div class="sec">
+      <p class="sec-ttl" id="log-count"></p>
+      <div id="log-list"></div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-settings">
+    <div class="sett-sec">
+      <div class="sett-ttl"><i class="ti ti-file-upload" aria-hidden="true"></i>นำเข้าข้อมูล IQ09</div>
+      <div class="sett-desc">อัปโหลดไฟล์ .txt จาก SAP IQ09 เพื่ออัปเดตรายการหม้อแปลงทั้งหมด ข้อมูลเดิมจะถูกแทนที่</div>
+      <div class="upload-zone" onclick="document.getElementById('file-in').click()">
+        <i class="ti ti-file-text" aria-hidden="true"></i>
+        แตะเพื่อเลือกไฟล์ .txt
+        <div style="font-size:11px;margin-top:4px;color:var(--color-text-tertiary)">รองรับ IQ09 format</div>
+      </div>
+      <input type="file" id="file-in" accept=".txt" style="display:none" onchange="importFile(this)">
+      <div id="import-result" style="margin-top:10px;font-size:12px;color:var(--color-text-secondary)"></div>
+    </div>
+    <div class="sett-sec">
+      <div class="sett-ttl"><i class="ti ti-database-export" aria-hidden="true"></i>ส่งออกข้อมูล</div>
+      <div class="sett-desc">ดาวน์โหลดประวัติการเบิกจ่ายทั้งหมดเป็น CSV</div>
+      <button class="btn-gps" onclick="exportCSV()"><i class="ti ti-download" aria-hidden="true"></i>ดาวน์โหลด CSV</button>
+    </div>
+    <div class="sett-sec">
+      <div class="sett-ttl"><i class="ti ti-trash" aria-hidden="true"></i>รีเซ็ตข้อมูลการเบิก</div>
+      <div class="sett-desc">ล้างประวัติการเบิกจ่ายทั้งหมด สต็อกจะกลับเป็นพร้อมเบิกทุกรายการ</div>
+      <button class="danger-btn" onclick="resetAll()"><i class="ti ti-refresh" aria-hidden="true" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>รีเซ็ต</button>
+    </div>
+    <div class="sett-sec">
+      <div style="font-size:11px;color:var(--color-text-tertiary)">คลัง D060 · ระบบเบิกจ่าย v2.0<br>ข้อมูลบันทึกบนฐานข้อมูล Cloud Supabase</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="overlay" id="modal-ov" onclick="closeModal(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-hdr">
+      <span id="modal-ttl">รายการ</span>
+      <div class="modal-close" onclick="closeModal(null)"><i class="ti ti-x" aria-hidden="true"></i></div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+</div>
+
+<script src="js/app.js"></script>
 </body>
 </html>
