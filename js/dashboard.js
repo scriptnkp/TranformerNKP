@@ -33,11 +33,13 @@ function renderDash() {
     
     let rowTot = 0;
     slocs.forEach(s => {
-      const cnt = mItems.filter(i => i.sloc === s && !i.is_issued).length;
-      const all = mItems.filter(i => i.sloc === s).length;
-      colTot[s] = (colTot[s] || 0) + all;
-      rowTot += all;
-      // ลบ /all ออกตามที่ระบุในภาพ
+      const cnt = mItems.filter(i => i.sloc === s && !i.is_issued).length; // จำนวนที่ยังไม่เบิก
+      const all = mItems.filter(i => i.sloc === s).length; // จำนวนทั้งหมดที่มีในประวัติ
+      
+      // เปลี่ยนมาบวกยอดรวมจาก cnt (ยอดคงเหลือ) แทน all
+      colTot[s] = (colTot[s] || 0) + cnt; 
+      rowTot += cnt;
+      
       tbody += `<td>${all > 0 ? `<span style="font-weight:500">${cnt}</span>` : '<span style="color:var(--color-text-tertiary)">-</span>'}</td>`;
     });
     grandTot += rowTot;
@@ -57,7 +59,9 @@ function showSlocModal(mat, title) {
   document.getElementById('modal-body').innerHTML = items.map(i => `
     <div class="modal-item">
       <div>
-        <div style="font-size:12px;font-weight:500;color:var(--color-text-primary)">${i.serial}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--color-text-primary)">
+          ${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}
+        </div>
         <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">${i.mfr || 'ไม่ระบุผู้ผลิต'} · ${i.import_date || ''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
