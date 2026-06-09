@@ -44,7 +44,7 @@ function avail() {
   return RAW.filter(x => !x.is_issued);
 }
 
-// ระบบเปลี่ยนหน้า (ดึงฟังก์ชันที่แยกไฟล์ไปแล้วมาเรียกใช้ตรงนี้)
+// ระบบเปลี่ยนหน้า
 function showPg(p) {
   document.querySelectorAll('.pg').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.nav-tab').forEach(x => x.classList.remove('on'));
@@ -119,15 +119,21 @@ async function importFile(input) {
   const reader = new FileReader();
   reader.onload = async e => {
     const text = e.target.result;
-    const parsed = parseIQ09(text);
+    const parsed = parseIQ09(text); // เรียกใช้ parseIQ09 แบบใหม่
     if (parsed.length === 0) {
-      document.getElementById('import-result').innerHTML = '<span style="color:var(--color-danger)">ไม่พบข้อมูลที่อ่านได้</span>';
+      document.getElementById('import-result').innerHTML = '<span style="color:var(--color-danger)">ไม่พบข้อมูลที่อ่านได้ กรุณาตรวจสอบรูปแบบไฟล์</span>';
       return;
     }
     
     updateHdrStatus('กำลัง Upsert...');
     const dbPayload = parsed.map(p => ({
-      serial: p.serial, mat: p.mat, description: p.desc, sloc: p.sloc, asset_no: p.assetNo, mfr: p.mfr, import_date: p.date
+      serial: p.serial, 
+      mat: p.mat, 
+      description: p.desc, 
+      sloc: p.sloc, 
+      asset_no: p.assetNo, 
+      mfr: p.mfr, 
+      import_date: p.date
     }));
 
     const { error } = await _supabase.from('transformers').upsert(dbPayload, { onConflict: 'serial' });
@@ -142,21 +148,30 @@ async function importFile(input) {
   input.value = '';
 }
 
+// ฟังก์ชันแปลงไฟล์ IQ09 แบบหั่นคอลัมน์ด้วย "|" (แม่นยำกว่า Regex)
 function parseIQ09(text) {
   const lines = text.split('\n');
   const result = [];
-  const dataRe = /^\|\s*([\d\-]+)\s*\|(.*?)\|([A-Z0-9]+)\|([YN])\s*\|(\d+)\|([\w\-]+)\s*\|([\w\s]+?)\s*\|([\w\s\-\/]+?)\s*\|\d+\|[\d\.]+\s*\|/;
-  lines.forEach(l => {
-    const m = l.match(dataRe);
-    if (m) { result.push({ mat: m[1].trim(), desc: m[2].trim(), sloc: m[5].trim(), serial: m[6].trim(), assetNo: '', mfr: m[8].trim(), date: '' }); }
-  });
-  if (result.length === 0) {
-    const re2 = /\|\s*(1-\d{2}-\d{3}-\d{4})\|(.*?)\|[A-Z0-9]+\|[YN]\s*\|(\d+)\|([\w\-]+)\s*\|([\w\d]+)\s*\|([\w\s\-]+?)\s*\|/g;
-    let m2;
-    while ((m2 = re2.exec(text)) !== null) {
-      result.push({ mat: m2[1].trim(), desc: m2[2].trim(), sloc: m2[3].trim(), serial: m2[4].trim(), assetNo: m2[5].trim(), mfr: m2[6].trim(), date: '' });
+  
+  lines.forEach(line => {
+    if (!line.includes('|')) return; // ข้ามบรรทัดที่ไม่มีเส้นคั่นตาราง
+    
+    const cols = line.split('|').map(c => c.trim());
+    
+    // เช็คว่าถ้าคอลัมน์ที่ 1 เป็นรหัสวัสดุ (ขึ้นต้นด้วย 1-) ให้เก็บข้อมูล
+    if (cols[1] && cols[1].match(/^1-\d{2}/)) {
+      result.push({ 
+        mat: cols[1], 
+        desc: cols[2], 
+        sloc: cols[5], 
+        serial: cols[6], 
+        assetNo: cols[7],  // ดึงเลขประจำ 
+        mfr: cols[8],      // ดึงผู้ผลิต
+        date: cols[10]     // ดึงวันที่
+      });
     }
-  }
+  });
+  
   return result;
 }
 
@@ -184,4 +199,5 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('on'), 2500);
 }
 
+// เริ่มต้นแอป
 initApp();
