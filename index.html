@@ -54,18 +54,27 @@
     <div class="sec">
       <div class="form-card">
         <h3><i class="ti ti-arrow-bar-right" aria-hidden="true" style="font-size:16px"></i>แบบฟอร์มเบิกจ่าย</h3>
+        
         <div class="fl">
-          <div class="fl-lbl">Serial No. *</div>
-          <select id="s-serial"><option value="">-- เลือก Serial No. --</option></select>
+          <div class="fl-lbl">ขนาดหม้อแปลง *</div>
+          <select id="s-size" onchange="filterSerialBySize()"><option value="">-- เลือกขนาดหม้อแปลง --</option></select>
         </div>
+        
+        <div class="fl">
+          <div class="fl-lbl">TR/SN *</div>
+          <select id="s-serial"><option value="">-- เลือก TR/SN --</option></select>
+        </div>
+        
         <div class="fl">
           <div class="fl-lbl">ผู้เบิก *</div>
           <input type="text" id="s-req" placeholder="ชื่อผู้เบิก / แผนก" />
         </div>
+        
         <div class="fl">
           <div class="fl-lbl">สถานที่ติดตั้ง</div>
           <input type="text" id="s-loc" placeholder="ระบุสถานที่..." />
         </div>
+        
         <div class="fl">
           <div class="fl-lbl">พิกัด GPS</div>
           <div class="gps-row">
@@ -73,14 +82,14 @@
             <button class="btn-gps" id="gps-btn" onclick="getGPS()"><i class="ti ti-current-location" aria-hidden="true"></i>ดึง GPS</button>
           </div>
         </div>
+        
         <div class="fl">
           <div class="fl-lbl">หมายเหตุ</div>
           <textarea id="s-note" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
         </div>
+        
         <button class="btn-primary" onclick="doIssue()">ยืนยันเบิกจ่าย</button>
       </div>
-      <p class="sec-ttl">รายการพร้อมเบิก</p>
-      <div id="ready-list"></div>
     </div>
   </div>
 
@@ -133,6 +142,8 @@
 <div class="toast" id="toast"></div>
 </div>
 
+<script src="js/dashboard.js"></script>
+<script src="js/form.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
