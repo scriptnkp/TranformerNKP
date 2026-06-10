@@ -190,8 +190,8 @@ function renderLog() {
         asset_no: trInfo.asset_no,
         desc: trInfo.description,
         import_date: trInfo.import_date,
-        issue_photo_url: l.issue_photo_url,   // <--- ดึง URL รูปลงมาใช้งาน
-        install_photo_url: l.install_photo_url // <--- ดึง URL รูปลงมาใช้งาน
+        issue_photo_url: l.issue_photo_url,
+        install_photo_url: l.install_photo_url
      });
   });
 
@@ -232,7 +232,6 @@ function renderLog() {
             const match = (i.desc || '').match(/(TR.*?KVA)/i);
             const sizeLabel = match ? match[1] : (i.desc || '').split(',').slice(0, 2).join(',');
 
-            // --- ส่วนปุ่มกดดูรูปภาพ ---
             const img1 = i.issue_photo_url ? `<a href="${i.issue_photo_url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe; transition:all 0.2s;"><i class="ti ti-photo" style="font-size:12px;"></i> รูปเบิก</a>` : '';
             const img2 = i.install_photo_url ? `<a href="${i.install_photo_url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0; transition:all 0.2s;"><i class="ti ti-camera" style="font-size:12px;"></i> รูปติดตั้ง</a>` : '';
 
@@ -264,6 +263,26 @@ function changeLogPage(dir) {
   renderLog();
 }
 
+// 📌 เพิ่มฟังก์ชันดึง GPS สำหรับหน้า Modal แก้ไข
+function getEditGPS() {
+  const btn = document.getElementById('edit-gps-btn');
+  const inp = document.getElementById('edit-gps');
+  if (!navigator.geolocation) { showToast('เบราว์เซอร์ไม่รองรับ GPS'); return; }
+  
+  btn.innerHTML = '<i class="ti ti-loader ti-spin" aria-hidden="true"></i>กำลังดึง...';
+  navigator.geolocation.getCurrentPosition(p => {
+    const lat = p.coords.latitude.toFixed(6);
+    const lng = p.coords.longitude.toFixed(6);
+    inp.value = `${lat}, ${lng}`;
+    btn.className = 'btn-gps got';
+    btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>ได้แล้ว';
+    showToast('ดึง GPS สำเร็จ');
+  }, () => {
+    btn.innerHTML = '<i class="ti ti-current-location" aria-hidden="true"></i> ดึง GPS';
+    showToast('ไม่สามารถดึง GPS ได้');
+  }, { timeout: 10000 });
+}
+
 function editJobModal(jobId) {
   const job = window.currentJobGroups.find(g => g.id === jobId);
   if(!job) return;
@@ -271,13 +290,23 @@ function editJobModal(jobId) {
   window.currentEditJobIds = job.logIds; 
 
   document.getElementById('modal-ttl').textContent = `แก้ไขประวัติเบิก (${job.items.length} เครื่อง)`;
+  
+  // เพิ่มปุ่มดึง GPS ใน Modal ตามที่ขอครับ
   document.getElementById('modal-body').innerHTML = `
     <div class="fl"><div class="fl-lbl">3. ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${job.req_name}"></div>
     <div class="fl"><div class="fl-lbl">4. ทีมงาน</div><input type="text" id="edit-team" value="${job.team || ''}"></div>
     <div class="fl"><div class="fl-lbl">สถานที่ติดตั้ง</div><input type="text" id="edit-loc" value="${job.location || ''}"></div>
-    <div class="fl"><div class="fl-lbl">พิกัด GPS (lat,lng)</div><input type="text" id="edit-gps" value="${job.gps || ''}"></div>
+    
+    <div class="fl">
+      <div class="fl-lbl">พิกัด GPS (lat,lng)</div>
+      <div class="gps-row">
+        <input type="text" id="edit-gps" value="${job.gps || ''}">
+        <button class="btn-gps" id="edit-gps-btn" onclick="getEditGPS()"><i class="ti ti-current-location" aria-hidden="true"></i> ดึง GPS</button>
+      </div>
+    </div>
+    
     <div class="fl"><div class="fl-lbl">WBS</div><input type="text" id="edit-wbs" value="${job.wbs || ''}"></div>
-    <button class="btn-primary" onclick="saveEditJob()">บันทึกการแก้ไขทั้งงาน</button>
+    <button class="btn-primary" id="btn-save-edit" onclick="saveEditJob()">บันทึกการแก้ไขทั้งงาน</button>
   `;
   document.getElementById('modal-ov').classList.add('on');
 }
@@ -292,16 +321,28 @@ async function saveEditJob() {
 
   if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
 
+  // เปลี่ยนสถานะปุ่มตอนกำลังเซฟข้อมูล
+  const saveBtn = document.getElementById('btn-save-edit');
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="ti ti-loader ti-spin" aria-hidden="true"></i> กำลังบันทึก...';
   updateHdrStatus('กำลังบันทึก...');
-  const { error } = await _supabase.from('logs').update({
-    req_name: req, team: team, location: loc, gps: gps, wbs: wbs
-  }).in('id', logIds);
 
-  if (error) { showToast('แก้ไขล้มเหลว'); updateHdr(); } 
-  else {
-    showToast('บันทึกการแก้ไขเรียบร้อย');
-    closeModal(null);
-    await initApp(); 
+  try {
+    const { error } = await _supabase.from('logs').update({
+      req_name: req, team: team, location: loc, gps: gps, wbs: wbs
+    }).in('id', logIds);
+
+    if (error) { 
+      showToast('แก้ไขล้มเหลว'); 
+      updateHdr(); 
+    } else {
+      showToast('บันทึกการแก้ไขเรียบร้อย');
+      closeModal(null);
+      await initApp(); 
+    }
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = 'บันทึกการแก้ไขทั้งงาน';
   }
 }
 
