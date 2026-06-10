@@ -1,14 +1,21 @@
 // ==========================================
 // Module: Core Application & Supabase Init
 // ==========================================
-const supabaseUrl = 'https://foplvudtvujxyxsibuck.supabase.co';
+
+// CONFIGURATION (ใส่ API ของคุณเรียบร้อยแล้ว)
+const supabaseUrl = 'https://foplvudtvujxyxsibuck.supabase.co'; 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvcGx2dWR0dnVqeHl4c2lidWNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODgzMzYsImV4cCI6MjA5NjU2NDMzNn0.h-BNhShuEarCUA0ozpYm6g9rUKET6ddJSYrCLmCQavc';
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+// Global App State
 let RAW = [];
 let logs = [];
 let slocF = 'all';
 let currentPg = 'dash';
+
+// Pagination Variables
+let currentLogPage = 1;
+const logsPerPage = 10;
 
 async function initApp() {
   updateHdrStatus('กำลังโหลดข้อมูล...');
@@ -52,7 +59,7 @@ function showPg(p) {
   updateHdr();
 }
 
-// หน้า Stock (ซ่อนของที่เบิกแล้ว)
+// หน้า Stock
 function renderStock() {
   const slocs = ['all', '0021', '0022', '8002'];
   const lbl = { all: 'ทั้งหมด', '0021': 'SLoc 0021', '0022': 'SLoc 0022', '8002': 'SLoc 8002' };
@@ -76,32 +83,54 @@ function renderStock() {
 
 function setSloc(s) { slocF = s; renderStock(); }
 
-// หน้า Log (ประวัติเบิก)
+// หน้า Log (ประวัติ - พร้อมระบบ Pagination และ Filter ขนาด)
 function renderLog() {
   const monthInput = document.getElementById('log-month-input');
   const searchInput = document.getElementById('log-search-input');
+  const sizeInput = document.getElementById('log-size-input');
   
   if (!monthInput.value) monthInput.value = new Date().toISOString().slice(0, 7);
   
   const currentMonth = monthInput.value;
   const searchTerm = searchInput.value.toLowerCase();
+  const selectedSize = sizeInput.value;
 
+  // 1. ดึงขนาดหม้อแปลงทั้งหมดใส่ Dropdown
+  const allSizes = [...new Set(logs.map(l => {
+    const trInfo = RAW.find(r => r.serial === l.serial) || {};
+    const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
+    return match ? match[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
+  }))].filter(Boolean);
+
+  if (sizeInput.options.length <= 1 && allSizes.length > 0) {
+    sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+    sizeInput.value = selectedSize;
+  }
+
+  // 2. กรองข้อมูล
   const filteredLogs = logs.filter(l => {
     const logDate = new Date(l.created_at);
     const logYYYYMM = logDate.getFullYear() + '-' + String(logDate.getMonth() + 1).padStart(2, '0');
+    
+    const trInfo = RAW.find(r => r.serial === l.serial) || {};
+    const matchSizeStr = (trInfo.description || '').match(/(TR.*?KVA)/i);
+    const size = matchSizeStr ? matchSizeStr[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
+
     const matchMonth = logYYYYMM === currentMonth;
     const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
                         l.req_name.toLowerCase().includes(searchTerm) || 
                         (l.location || '').toLowerCase().includes(searchTerm);
-    return matchMonth && (!searchTerm || matchSearch);
+    const matchSize = !selectedSize || size === selectedSize;
+
+    return matchMonth && (!searchTerm || matchSearch) && matchSize;
   });
 
+  // 3. สรุปยอด
   const sizeSummary = {};
   filteredLogs.forEach(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
-    const desc = trInfo.description || '';
-    const match = desc.match(/(TR.*?KVA)/i);
-    const size = match ? match[1].trim() : (desc.split(',')[0].trim() || 'ไม่ระบุขนาด');
+    const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
+    const size = match ? match[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
     sizeSummary[size] = (sizeSummary[size] || 0) + 1;
   });
 
@@ -115,13 +144,22 @@ function renderLog() {
   }
   document.getElementById('log-summary').innerHTML = summaryHTML;
 
-  document.getElementById('log-count').textContent = `รายการเบิก (${filteredLogs.length})`;
-  document.getElementById('log-list').innerHTML = filteredLogs.length ? filteredLogs.map((l) => {
+  // 4. Pagination
+  const totalPages = Math.ceil(filteredLogs.length / logsPerPage) || 1;
+  if (currentLogPage > totalPages) currentLogPage = totalPages;
+
+  const startIndex = (currentLogPage - 1) * logsPerPage;
+  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + logsPerPage);
+
+  // 5. วาดรายการ
+  document.getElementById('log-count').textContent = `รายการเบิก (ทั้งหมด ${filteredLogs.length} รายการ)`;
+  document.getElementById('log-list').innerHTML = paginatedLogs.length ? paginatedLogs.map((l) => {
     const formattedTime = new Date(l.created_at).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' });
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
     
-    // ทำลิงก์กด GPS เพื่อนำทาง
-    const gpsLink = l.gps ? `<a href="https://maps.google.com/?q=${l.gps}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${l.gps} <span style="font-size:10px; background:var(--color-bg-main); padding:2px 6px; border-radius:10px;">นำทาง</span></a>` : '';
+    // สร้างลิงก์นำทางให้สมบูรณ์
+    const cleanGPS = (l.gps || '').replace(/\s+/g, '');
+    const gpsLink = l.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${l.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item">
@@ -138,9 +176,20 @@ function renderLog() {
       ${l.note ? `<div class="log-row"><i class="ti ti-note" style="font-size:12px" aria-hidden="true"></i>${l.note}</div>` : ''}
     </div>`;
   }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ไม่พบข้อมูลที่ค้นหา</div>`;
+
+  // อัปเดตสถานะปุ่มเปลี่ยนหน้า
+  document.getElementById('log-page-info').textContent = `หน้า ${currentLogPage} / ${totalPages}`;
+  document.getElementById('btn-prev-page').disabled = currentLogPage === 1;
+  document.getElementById('btn-next-page').disabled = currentLogPage === totalPages;
+  document.getElementById('btn-prev-page').style.opacity = currentLogPage === 1 ? '0.5' : '1';
+  document.getElementById('btn-next-page').style.opacity = currentLogPage === totalPages ? '0.5' : '1';
 }
 
-// Modal แก้ไขประวัติ
+function changeLogPage(dir) {
+  currentLogPage += dir;
+  renderLog();
+}
+
 function editLogModal(logId) {
   const log = logs.find(l => l.id === logId);
   if(!log) return;
