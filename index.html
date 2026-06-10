@@ -31,6 +31,7 @@
     <div class="nav-tab" onclick="showPg('log')"><i class="ti ti-history" aria-hidden="true"></i>ประวัติ</div>
   </div>
 
+  <!-- Page 1: Dashboard -->
   <div class="pg on" id="pg-dash">
     <div class="sec">
       <div class="kpi-grid" id="kpi"></div>
@@ -41,6 +42,7 @@
     </div>
   </div>
 
+  <!-- Page 2: Stock -->
   <div class="pg" id="pg-stock">
     <div class="sec">
       <div class="filter-row" id="sf"></div>
@@ -48,20 +50,33 @@
     </div>
   </div>
 
+  <!-- Page 3: Issue Form (ระบบตะกร้าเบิก) -->
   <div class="pg" id="pg-issue">
     <div class="sec">
       <div class="form-card">
-        <h3><i class="ti ti-arrow-bar-right" aria-hidden="true" style="font-size:16px"></i>แบบฟอร์มเบิกจ่าย</h3>
+        <h3><i class="ti ti-arrow-bar-right" aria-hidden="true" style="font-size:16px"></i>แบบฟอร์มเบิกจ่าย (หลายรายการ)</h3>
+        
         <div class="fl">
-          <div class="fl-lbl">ขนาดหม้อแปลง *</div>
-          <select id="s-size" onchange="filterSerialBySize()"><option value="">-- เลือกขนาดหม้อแปลง --</option></select>
+          <div class="fl-lbl">1. กรองขนาดหม้อแปลง</div>
+          <select id="s-size" onchange="filterSerialBySize()"><option value="">-- ทุกขนาด --</option></select>
         </div>
+        
         <div class="fl">
-          <div class="fl-lbl">TR/SN *</div>
-          <select id="s-serial"><option value="">-- เลือก TR/SN --</option></select>
+          <div class="fl-lbl">2. เลือก TR/SN เพื่อเพิ่มลงรายการ *</div>
+          <div style="display:flex; gap:8px;">
+            <select id="s-serial" style="flex:1; border-color:var(--color-primary);"><option value="">-- เลือก TR/SN --</option></select>
+            <button class="btn-gps" onclick="addToCart()" style="background:var(--color-primary-light); color:var(--color-primary); border:1px solid var(--color-primary-light); padding:10px 16px;"><i class="ti ti-plus" aria-hidden="true" style="font-size:16px;"></i> เพิ่ม</button>
+          </div>
         </div>
+        
+        <!-- รายการรอเบิก (Cart) -->
+        <div id="cart-container" style="display:none; margin-bottom:16px; padding:12px; border:1px dashed var(--color-primary); border-radius:var(--radius-md); background:var(--color-primary-light);">
+          <div style="font-size:12px; font-weight:600; color:var(--color-primary); margin-bottom:8px;">📦 รายการเตรียมเบิก (<span id="cart-count">0</span> เครื่อง)</div>
+          <div id="cart-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+        
         <div class="fl">
-          <div class="fl-lbl">ผู้เบิก *</div>
+          <div class="fl-lbl">3. ผู้เบิก *</div>
           <input type="text" id="s-req" placeholder="ชื่อผู้เบิก / แผนก" />
         </div>
         <div class="fl">
@@ -79,11 +94,13 @@
           <div class="fl-lbl">หมายเหตุ</div>
           <textarea id="s-note" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
         </div>
-        <button class="btn-primary" onclick="doIssue()">ยืนยันเบิกจ่าย</button>
+        
+        <button class="btn-primary" onclick="doIssueCart()"><i class="ti ti-check" aria-hidden="true"></i> ยืนยันเบิกจ่ายทั้งหมด</button>
       </div>
     </div>
   </div>
 
+  <!-- Page 4: History Log -->
   <div class="pg" id="pg-log">
     <div class="sec">
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -107,6 +124,7 @@
     </div>
   </div>
 
+  <!-- Page 5: Settings -->
   <div class="pg" id="pg-settings">
     <div class="sett-sec">
       <div class="sett-ttl"><i class="ti ti-file-upload" aria-hidden="true"></i>นำเข้าข้อมูล IQ09</div>
@@ -133,6 +151,7 @@
 
 </div>
 
+<!-- Modal Overlay -->
 <div class="overlay" id="modal-ov" onclick="closeModal(event)">
   <div class="modal" id="modal-box">
     <div class="modal-hdr">
@@ -143,9 +162,11 @@
   </div>
 </div>
 
+<!-- Toast -->
 <div class="toast" id="toast"></div>
 </div>
 
+<!-- JavaScript Files -->
 <script src="js/dashboard.js"></script>
 <script src="js/form.js"></script>
 <script src="js/app.js"></script>
