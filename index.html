@@ -31,6 +31,7 @@
     <div class="nav-tab" onclick="showPg('log')"><i class="ti ti-history" aria-hidden="true"></i>ประวัติ</div>
   </div>
 
+  <!-- Page 1: Dashboard -->
   <div class="pg on" id="pg-dash">
     <div class="sec">
       <div class="kpi-grid" id="kpi"></div>
@@ -41,6 +42,7 @@
     </div>
   </div>
 
+  <!-- Page 2: Issue Form -->
   <div class="pg" id="pg-issue">
     <div class="sec">
       <div class="form-card">
@@ -90,6 +92,7 @@
     </div>
   </div>
 
+  <!-- Page 3: Pending Write-off -->
   <div class="pg" id="pg-pending">
     <div class="sec">
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -110,6 +113,7 @@
     </div>
   </div>
 
+  <!-- Page 4: History Log -->
   <div class="pg" id="pg-log">
     <div class="sec">
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -133,6 +137,7 @@
     </div>
   </div>
 
+  <!-- Page 5: Settings -->
   <div class="pg" id="pg-settings">
     <div class="sett-sec">
       <div class="sett-ttl"><i class="ti ti-file-upload" aria-hidden="true"></i>นำเข้าข้อมูล IQ09</div>
@@ -149,15 +154,11 @@
       <div class="sett-desc">ดาวน์โหลดประวัติการเบิกจ่ายทั้งหมดเป็น CSV</div>
       <button class="btn-gps" onclick="exportCSV()"><i class="ti ti-download" aria-hidden="true"></i>ดาวน์โหลด CSV</button>
     </div>
-    <div class="sett-sec">
-      <div class="sett-ttl"><i class="ti ti-trash" aria-hidden="true"></i>รีเซ็ตข้อมูลการเบิก</div>
-      <div class="sett-desc">ล้างประวัติการเบิกจ่ายทั้งหมด สต็อกจะกลับเป็นพร้อมเบิกทุกรายการ</div>
-      <button class="danger-btn" onclick="resetAll()"><i class="ti ti-refresh" aria-hidden="true" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>รีเซ็ต</button>
-    </div>
   </div>
 
 </div>
 
+<!-- Modal Overlay -->
 <div class="overlay" id="modal-ov" onclick="closeModal(event)">
   <div class="modal" id="modal-box">
     <div class="modal-hdr">

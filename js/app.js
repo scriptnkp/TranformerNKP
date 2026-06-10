@@ -11,7 +11,7 @@ let logs = [];
 let currentPg = 'dash';
 
 let currentLogPage = 1;
-let currentPendPage = 1; // ตัวแปรสำหรับแบ่งหน้าเมนูรอตัดจ่าย
+let currentPendPage = 1; 
 const logsPerPage = 10;
 
 async function initApp() {
@@ -49,7 +49,6 @@ function showPg(p) {
   document.querySelectorAll('.nav-tab').forEach(x => x.classList.remove('on'));
   
   document.getElementById('pg-' + p).classList.add('on');
-  // ปรับการอ้างอิงเมนูใหม่: dash, issue, pending, log
   const nm = ['dash', 'issue', 'pending', 'log'];
   const idx = nm.indexOf(p);
   if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('on');
@@ -60,7 +59,6 @@ function showPg(p) {
   updateHdr();
 }
 
-// 📦 ฟังก์ชันแสดงหน้ารอตัดจ่าย (Pending)
 function renderPending() {
   const searchInput = document.getElementById('pend-search-input');
   const sizeInput = document.getElementById('pend-size-input');
@@ -68,7 +66,6 @@ function renderPending() {
   const searchTerm = searchInput.value.toLowerCase();
   const selectedSize = sizeInput.value;
 
-  // ดึงเฉพาะงานที่ยังไม่มีเลขตัดจ่าย (ทุกเดือนรวมกัน)
   const pendingLogsAll = logs.filter(l => !l.write_off_no);
 
   const allSizes = [...new Set(pendingLogsAll.map(l => {
@@ -196,7 +193,6 @@ function changePendPage(dir) {
   renderPending();
 }
 
-// 🕰️ ฟังก์ชันแสดงหน้าประวัติทั้งหมด (Log)
 function renderLog() {
   const monthInput = document.getElementById('log-month-input');
   const searchInput = document.getElementById('log-search-input');
@@ -634,16 +630,6 @@ function exportCSV() {
   
   const blob = new Blob(['\ufeff' + hdr + rows], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'issue_log.csv'; a.click();
-}
-
-async function resetAll() {
-  if (!confirm('ยืนยันการล้างประวัติการเบิกจ่ายทั้งหมดบน Cloud?')) return;
-  updateHdrStatus('กำลังล้างข้อมูล...');
-  try {
-    await _supabase.from('logs').delete().neq('id', 0);
-    await _supabase.from('transformers').update({ is_issued: false, is_written_off: false }).neq('serial', 'dummy');
-    showToast('รีเซ็ตฐานข้อมูลเรียบร้อยแล้ว'); await initApp();
-  } catch (error) { showToast('การรีเซ็ตล้มเหลว'); updateHdr(); }
 }
 
 function showToast(msg) {
