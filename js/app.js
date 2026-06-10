@@ -132,9 +132,8 @@ function renderLog() {
     const matchSizeStr = (trInfo.description || '').match(/(TR.*?KVA)/i);
     const size = matchSizeStr ? matchSizeStr[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
 
-    // 👇 เพิ่มการค้นหาจากเลขประจำ (Asset No) ตรงบรรทัดที่ 2 ในนี้ครับ
     const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
-                        (trInfo.asset_no || '').toLowerCase().includes(searchTerm) || 
+                        (trInfo.asset_no || '').toLowerCase().includes(searchTerm) ||
                         l.req_name.toLowerCase().includes(searchTerm) || 
                         (l.location || '').toLowerCase().includes(searchTerm) ||
                         (l.team || '').toLowerCase().includes(searchTerm) ||
@@ -144,6 +143,7 @@ function renderLog() {
 
     return (!searchTerm || matchSearch) && matchSize;
   });
+
   const sizeSummary = {};
   filteredLogs.forEach(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
@@ -175,10 +175,10 @@ function renderLog() {
            created_at: l.created_at,
            formattedTime: date.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' }),
            req_name: l.req_name,
-           team: l.team, // นำข้อมูลทีมงานมาใช้งาน
+           team: l.team, 
            location: l.location,
            gps: l.gps,
-           wbs: l.wbs,   // นำข้อมูล WBS มาใช้งาน
+           wbs: l.wbs,   
            items: []
         };
      }
@@ -189,7 +189,9 @@ function renderLog() {
         serial: l.serial,
         asset_no: trInfo.asset_no,
         desc: trInfo.description,
-        import_date: trInfo.import_date
+        import_date: trInfo.import_date,
+        issue_photo_url: l.issue_photo_url,   // <--- ดึง URL รูปลงมาใช้งาน
+        install_photo_url: l.install_photo_url // <--- ดึง URL รูปลงมาใช้งาน
      });
   });
 
@@ -230,13 +232,18 @@ function renderLog() {
             const match = (i.desc || '').match(/(TR.*?KVA)/i);
             const sizeLabel = match ? match[1] : (i.desc || '').split(',').slice(0, 2).join(',');
 
+            // --- ส่วนปุ่มกดดูรูปภาพ ---
+            const img1 = i.issue_photo_url ? `<a href="${i.issue_photo_url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe; transition:all 0.2s;"><i class="ti ti-photo" style="font-size:12px;"></i> รูปเบิก</a>` : '';
+            const img2 = i.install_photo_url ? `<a href="${i.install_photo_url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0; transition:all 0.2s;"><i class="ti ti-camera" style="font-size:12px;"></i> รูปติดตั้ง</a>` : '';
+
             return `
-            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:4px;">
               <div>
                 <span style="font-weight:600; color:var(--color-text-primary);">${i.serial}</span> ${i.asset_no ? ' <span style="color:var(--color-text-tertiary);">/ '+i.asset_no+'</span>' : ''} <br> 
                 <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
+                ${(img1 || img2) ? `<div style="margin-top:6px; display:flex; gap:6px;">${img1} ${img2}</div>` : ''}
               </div>
-              <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card);">มีผลจาก ${i.import_date || '-'}</span>
+              <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
             </div>
             `
           }).join('')}
@@ -337,11 +344,10 @@ function parseIQ09(text) {
 
 function exportCSV() {
   if (logs.length === 0) { showToast('ไม่มีประวัติ'); return; }
-  // อัปเดตโครงสร้าง CSV ให้มีครบทุกคอลัมน์
-  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,ทีมงาน,สถานที่,GPS,WBS,วันที่บันทึก\n';
+  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,ทีมงาน,สถานที่,GPS,WBS,วันที่บันทึก,ลิงก์รูปเบิก,ลิงก์รูปติดตั้ง\n';
   const rows = logs.map(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
-    const desc = (trInfo.description || '').replace(/"/g, '""'); // ป้องกัน Error ถ้าในคำอธิบายมีฟันหนู
+    const desc = (trInfo.description || '').replace(/"/g, '""'); 
     return [
       l.serial, 
       '"' + desc + '"', 
@@ -350,7 +356,9 @@ function exportCSV() {
       l.location || '', 
       l.gps || '', 
       l.wbs || '', 
-      l.created_at
+      l.created_at,
+      l.issue_photo_url || '',
+      l.install_photo_url || ''
     ].join(',');
   }).join('\n');
   
