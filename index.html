@@ -6,7 +6,7 @@
   <title>ระบบเบิกจ่ายหม้อแปลงไฟฟ้า D060</title>
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sarabun:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -18,7 +18,7 @@
   
   <div class="hdr">
     <div class="hdr-left">
-      <h1><i class="ti ti-bolt" aria-hidden="true" style="font-size:15px;margin-right:4px"></i>คลังหม้อแปลง D060</h1>
+      <h1><i class="ti ti-bolt" aria-hidden="true"></i>คลังหม้อแปลง D060</h1>
       <p id="hdr-sub">กำลังเชื่อมต่อฐานข้อมูล...</p>
     </div>
     <div class="hdr-btn" onclick="showPg('settings')" aria-label="ตั้งค่า"><i class="ti ti-settings" aria-hidden="true"></i></div>
@@ -31,7 +31,6 @@
     <div class="nav-tab" onclick="showPg('log')"><i class="ti ti-history" aria-hidden="true"></i>ประวัติ</div>
   </div>
 
-  <!-- Page 1: Dashboard -->
   <div class="pg on" id="pg-dash">
     <div class="sec">
       <div class="kpi-grid" id="kpi"></div>
@@ -42,7 +41,6 @@
     </div>
   </div>
 
-  <!-- Page 2: Stock -->
   <div class="pg" id="pg-stock">
     <div class="sec">
       <div class="filter-row" id="sf"></div>
@@ -50,7 +48,6 @@
     </div>
   </div>
 
-  <!-- Page 3: Issue Form -->
   <div class="pg" id="pg-issue">
     <div class="sec">
       <div class="form-card">
@@ -87,21 +84,29 @@
     </div>
   </div>
 
-  <!-- Page 4: History Log -->
   <div class="pg" id="pg-log">
     <div class="sec">
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <input type="month" id="log-month-input" style="width:130px;" onchange="renderLog()" />
-        <input type="text" id="log-search-input" placeholder="ค้นหา TR, ผู้เบิก..." style="flex:1;" onkeyup="renderLog()" />
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <input type="month" id="log-month-input" style="flex:1; min-width:120px;" onchange="currentLogPage=1; renderLog()" />
+        <select id="log-size-input" style="flex:1; min-width:120px; padding:10px 12px;" onchange="currentLogPage=1; renderLog()">
+          <option value="">ทุกขนาด</option>
+        </select>
+        <input type="text" id="log-search-input" placeholder="ค้นหา TR, ผู้เบิก..." style="flex:1; min-width:100%;" onkeyup="currentLogPage=1; renderLog()" />
       </div>
+      
       <div id="log-summary" style="margin-bottom:16px; font-size:12px; background:var(--color-bg-secondary); padding:12px; border-radius:var(--radius-md);"></div>
       
       <p class="sec-ttl" id="log-count"></p>
       <div id="log-list"></div>
+
+      <div id="log-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:16px; border-top:1px dashed var(--color-border);">
+        <button class="pill" id="btn-prev-page" onclick="changeLogPage(-1)"><i class="ti ti-chevron-left" style="font-size:14px; vertical-align:-2px;"></i> ก่อนหน้า</button>
+        <span id="log-page-info" style="font-size:12px; color:var(--color-text-secondary); font-weight:600;">หน้า 1 / 1</span>
+        <button class="pill" id="btn-next-page" onclick="changeLogPage(1)">ถัดไป <i class="ti ti-chevron-right" style="font-size:14px; vertical-align:-2px;"></i></button>
+      </div>
     </div>
   </div>
 
-  <!-- Page 5: Settings -->
   <div class="pg" id="pg-settings">
     <div class="sett-sec">
       <div class="sett-ttl"><i class="ti ti-file-upload" aria-hidden="true"></i>นำเข้าข้อมูล IQ09</div>
@@ -112,7 +117,7 @@
         <div style="font-size:11px;margin-top:4px;color:var(--color-text-tertiary)">รองรับ IQ09 format</div>
       </div>
       <input type="file" id="file-in" accept=".txt" style="display:none" onchange="importFile(this)">
-      <div id="import-result" style="margin-top:10px;font-size:12px;color:var(--color-text-secondary)"></div>
+      <div id="import-result" style="margin-top:10px; font-size:12px; color:var(--color-text-secondary)"></div>
     </div>
     <div class="sett-sec">
       <div class="sett-ttl"><i class="ti ti-database-export" aria-hidden="true"></i>ส่งออกข้อมูล</div>
@@ -128,7 +133,6 @@
 
 </div>
 
-<!-- Modal Overlay -->
 <div class="overlay" id="modal-ov" onclick="closeModal(event)">
   <div class="modal" id="modal-box">
     <div class="modal-hdr">
@@ -139,11 +143,9 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 </div>
 
-<!-- JavaScript Files -->
 <script src="js/dashboard.js"></script>
 <script src="js/form.js"></script>
 <script src="js/app.js"></script>
