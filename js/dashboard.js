@@ -28,22 +28,19 @@ function renderDash() {
     if(mItems.length === 0) return;
     const shortDesc = mItems[0].description.replace('TR. ', '').replace('TR.,', '').split(',').slice(0, 2).join(',');
     
-    // สร้างแถว (เอา onclick ออกจาก <tr> เพื่อป้องกันการกดโดนทั้งแถว)
     tbody += `<tr>`;
     tbody += `<td><div style="font-weight:500;font-size:12px;color:var(--color-text-primary)">${shortDesc.trim()}</div><div class="mat-code">${m}</div></td>`;
     
     let rowTot = 0;
     slocs.forEach(s => {
-      const cnt = mItems.filter(i => i.sloc === s && !i.is_issued).length; // นับเฉพาะที่พร้อมเบิก
+      const cnt = mItems.filter(i => i.sloc === s && !i.is_issued).length; 
       colTot[s] = (colTot[s] || 0) + cnt; 
       rowTot += cnt;
       
-      // ใส่ onclick แยกไว้ในแต่ละ <td> พร้อมส่งค่า SLoc เฉพาะช่องนั้นๆ เข้าไป
       tbody += `<td class="sloc-row-clickable" onclick="showSlocModal('${m}','${shortDesc}', '${s}')">${cnt > 0 ? `<span style="font-weight:600; color:var(--color-primary)">${cnt}</span>` : '<span style="color:var(--color-text-tertiary)">0</span>'}</td>`;
     });
     grandTot += rowTot;
     
-    // ช่องรวมยอดแถว (ส่งค่า 'all' ไปให้โชว์ทุกคลัง)
     tbody += `<td class="sloc-row-clickable" onclick="showSlocModal('${m}','${shortDesc}', 'all')" style="font-weight:600; background:var(--color-bg-secondary)">${rowTot}</td></tr>`;
   });
   
@@ -54,12 +51,8 @@ function renderDash() {
   document.getElementById('sloc-tbl').innerHTML = thead + tbody;
 }
 
-// รับพารามิเตอร์ 'sloc' เข้ามา เพื่อกรองตามคลังที่ถูกคลิก
 function showSlocModal(mat, title, sloc) {
-  // กรองเอาเฉพาะ: ยังไม่เบิก + รหัสวัสดุตรง + (SLoc ตรง หรือ ถ้าคลิกช่องรวมให้ดึงมาหมด)
   const items = RAW.filter(i => i.mat === mat && !i.is_issued && (sloc === 'all' || i.sloc === sloc));
-  
-  // ปรับชื่อ Header บน Popup ให้ชัดเจน
   const slocLabel = sloc === 'all' ? 'ทุก SLoc' : `SLoc ${sloc}`;
   document.getElementById('modal-ttl').textContent = `${title.trim()} (${slocLabel} - ${items.length} รายการ)`;
   
