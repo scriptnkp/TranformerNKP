@@ -232,15 +232,19 @@ function renderLog() {
             const match = (i.desc || '').match(/(TR.*?KVA)/i);
             const sizeLabel = match ? match[1] : (i.desc || '').split(',').slice(0, 2).join(',');
 
-            const img1 = i.issue_photo_url ? `<a href="${i.issue_photo_url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe; transition:all 0.2s;"><i class="ti ti-photo" style="font-size:12px;"></i> รูปเบิก</a>` : '';
-            const img2 = i.install_photo_url ? `<a href="${i.install_photo_url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0; transition:all 0.2s;"><i class="ti ti-camera" style="font-size:12px;"></i> รูปติดตั้ง</a>` : '';
+            // --- แปลงรูปหลายรูปลงใน Array แล้วสร้างปุ่มลิงก์ ---
+            const issueUrls = (i.issue_photo_url || '').split(',').filter(Boolean);
+            const installUrls = (i.install_photo_url || '').split(',').filter(Boolean);
+
+            let img1Html = issueUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe;"><i class="ti ti-photo" style="font-size:12px;"></i> เบิก ${idx+1}</a>`).join(' ');
+            let img2Html = installUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0;"><i class="ti ti-camera" style="font-size:12px;"></i> ติดตั้ง ${idx+1}</a>`).join(' ');
 
             return `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:4px;">
               <div>
                 <span style="font-weight:600; color:var(--color-text-primary);">${i.serial}</span> ${i.asset_no ? ' <span style="color:var(--color-text-tertiary);">/ '+i.asset_no+'</span>' : ''} <br> 
                 <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
-                ${(img1 || img2) ? `<div style="margin-top:6px; display:flex; gap:6px;">${img1} ${img2}</div>` : ''}
+                ${(img1Html || img2Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html}</div>` : ''}
               </div>
               <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
             </div>
@@ -263,7 +267,6 @@ function changeLogPage(dir) {
   renderLog();
 }
 
-// 📌 เพิ่มฟังก์ชันดึง GPS สำหรับหน้า Modal แก้ไข
 function getEditGPS() {
   const btn = document.getElementById('edit-gps-btn');
   const inp = document.getElementById('edit-gps');
@@ -291,7 +294,6 @@ function editJobModal(jobId) {
 
   document.getElementById('modal-ttl').textContent = `แก้ไขประวัติเบิก (${job.items.length} เครื่อง)`;
   
-  // เพิ่มปุ่มดึง GPS ใน Modal ตามที่ขอครับ
   document.getElementById('modal-body').innerHTML = `
     <div class="fl"><div class="fl-lbl">3. ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${job.req_name}"></div>
     <div class="fl"><div class="fl-lbl">4. ทีมงาน</div><input type="text" id="edit-team" value="${job.team || ''}"></div>
@@ -321,7 +323,6 @@ async function saveEditJob() {
 
   if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
 
-  // เปลี่ยนสถานะปุ่มตอนกำลังเซฟข้อมูล
   const saveBtn = document.getElementById('btn-save-edit');
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="ti ti-loader ti-spin" aria-hidden="true"></i> กำลังบันทึก...';
