@@ -59,15 +59,6 @@
         </div>
         
         <div class="fl">
-          <div class="fl-lbl">แนบรูปถ่ายก่อนยก (เบิก)</div>
-          <input type="file" id="f-issue-photo" accept="image/*" style="font-size:12px; padding:8px;" />
-        </div>
-        <div class="fl">
-          <div class="fl-lbl">แนบรูปถ่ายหลังติดตั้ง</div>
-          <input type="file" id="f-install-photo" accept="image/*" style="font-size:12px; padding:8px;" />
-        </div>
-
-        <div class="fl">
           <div class="fl-lbl">2. เลือก TR/SN เพื่อเพิ่มลงรายการ *</div>
           <div style="display:flex; gap:8px;">
             <select id="s-serial" style="flex:1; border-color:var(--color-primary);"><option value="">-- เลือก TR/SN --</option></select>
@@ -102,6 +93,15 @@
         <div class="fl">
           <div class="fl-lbl">WBS</div>
           <input type="text" id="s-wbs" placeholder="รหัส WBS..." />
+        </div>
+
+        <div class="fl">
+          <div class="fl-lbl">แนบรูปถ่ายก่อนยก (เบิก)</div>
+          <input type="file" id="f-issue-photo" accept="image/*" style="font-size:12px; padding:8px;" />
+        </div>
+        <div class="fl">
+          <div class="fl-lbl">แนบรูปถ่ายหลังติดตั้ง</div>
+          <input type="file" id="f-install-photo" accept="image/*" style="font-size:12px; padding:8px;" />
         </div>
         
         <button class="btn-primary" onclick="doIssueCart()"><i class="ti ti-check" aria-hidden="true"></i> ยืนยันเบิกจ่ายทั้งหมด</button>
