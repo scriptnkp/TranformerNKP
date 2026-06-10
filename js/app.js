@@ -28,19 +28,14 @@ async function initApp() {
   }
 }
 
-function updateHdrStatus(text) {
-  document.getElementById('hdr-sub').textContent = text;
-}
-
+function updateHdrStatus(text) { document.getElementById('hdr-sub').textContent = text; }
 function updateHdr() {
   const tot = RAW.length;
   const iss = RAW.filter(r => r.is_issued).length;
   document.getElementById('hdr-sub').textContent = `${tot} รายการ · คงเหลือ ${tot - iss} · เบิกแล้ว ${iss}`;
 }
 
-function avail() {
-  return RAW.filter(x => !x.is_issued);
-}
+function avail() { return RAW.filter(x => !x.is_issued); }
 
 function showPg(p) {
   document.querySelectorAll('.pg').forEach(x => x.classList.remove('on'));
@@ -57,60 +52,131 @@ function showPg(p) {
   updateHdr();
 }
 
-// หน้า Stock
+// หน้า Stock (ซ่อนของที่เบิกแล้ว)
 function renderStock() {
   const slocs = ['all', '0021', '0022', '8002'];
   const lbl = { all: 'ทั้งหมด', '0021': 'SLoc 0021', '0022': 'SLoc 0022', '8002': 'SLoc 8002' };
   document.getElementById('sf').innerHTML = slocs.map(s => `<div class="pill ${slocF === s ? 'on' : ''}" onclick="setSloc('${s}')">${lbl[s]}</div>`).join('');
   
-  const items = RAW.filter(i => slocF === 'all' || i.sloc === slocF);
+  const items = RAW.filter(i => (slocF === 'all' || i.sloc === slocF) && !i.is_issued);
+  
   document.getElementById('stock-list').innerHTML = items.length ? items.map(i => `
-    <div class="item ${i.is_issued ? 'issued' : ''}">
+    <div class="item">
       <div class="item-top">
         <span class="item-serial">${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}</span>
-        <span class="badge ${i.is_issued ? 'bg-out' : 'bg-ok'}">${i.is_issued ? 'เบิกแล้ว' : 'พร้อมเบิก'}</span>
+        <span class="badge bg-ok">พร้อมเบิก</span>
       </div>
       <div class="item-desc">${i.description}</div>
       <div class="item-meta">
         <span class="badge bg-sloc">${i.sloc}</span>
         <span style="font-size:10px;color:var(--color-text-tertiary)">${i.mfr || '-'}</span>
       </div>
-    </div>`).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ไม่มีรายการ</div>`;
+    </div>`).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ไม่มีรายการในคลัง</div>`;
 }
 
 function setSloc(s) { slocF = s; renderStock(); }
 
-// หน้า Log (ประวัติ)
+// หน้า Log (ประวัติเบิก)
 function renderLog() {
-  document.getElementById('log-count').textContent = `ทั้งหมด ${logs.length} รายการ`;
-  document.getElementById('log-list').innerHTML = logs.length ? logs.map((l, i) => {
+  const monthInput = document.getElementById('log-month-input');
+  const searchInput = document.getElementById('log-search-input');
+  
+  if (!monthInput.value) monthInput.value = new Date().toISOString().slice(0, 7);
+  
+  const currentMonth = monthInput.value;
+  const searchTerm = searchInput.value.toLowerCase();
+
+  const filteredLogs = logs.filter(l => {
+    const logDate = new Date(l.created_at);
+    const logYYYYMM = logDate.getFullYear() + '-' + String(logDate.getMonth() + 1).padStart(2, '0');
+    const matchMonth = logYYYYMM === currentMonth;
+    const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
+                        l.req_name.toLowerCase().includes(searchTerm) || 
+                        (l.location || '').toLowerCase().includes(searchTerm);
+    return matchMonth && (!searchTerm || matchSearch);
+  });
+
+  const sizeSummary = {};
+  filteredLogs.forEach(l => {
+    const trInfo = RAW.find(r => r.serial === l.serial) || {};
+    const desc = trInfo.description || '';
+    const match = desc.match(/(TR.*?KVA)/i);
+    const size = match ? match[1].trim() : (desc.split(',')[0].trim() || 'ไม่ระบุขนาด');
+    sizeSummary[size] = (sizeSummary[size] || 0) + 1;
+  });
+
+  let summaryHTML = '<div style="font-weight:600; margin-bottom:8px; color:var(--color-text-primary)">📊 สรุปยอดเบิกเดือนนี้:</div>';
+  if (Object.keys(sizeSummary).length) {
+    for (const [sz, count] of Object.entries(sizeSummary)) {
+      summaryHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:4px; border-bottom:1px dashed var(--color-border); padding-bottom:4px;"><span style="color:var(--color-text-secondary)">${sz}</span><span style="font-weight:600; color:var(--color-primary)">${count} เครื่อง</span></div>`;
+    }
+  } else {
+    summaryHTML += '<div style="color:var(--color-text-tertiary)">ไม่มีรายการเบิกจ่าย</div>';
+  }
+  document.getElementById('log-summary').innerHTML = summaryHTML;
+
+  document.getElementById('log-count').textContent = `รายการเบิก (${filteredLogs.length})`;
+  document.getElementById('log-list').innerHTML = filteredLogs.length ? filteredLogs.map((l) => {
     const formattedTime = new Date(l.created_at).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' });
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
+    
+    // ทำลิงก์กด GPS เพื่อนำทาง
+    const gpsLink = l.gps ? `<a href="https://maps.google.com/?q=${l.gps}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${l.gps} <span style="font-size:10px; background:var(--color-bg-main); padding:2px 6px; border-radius:10px;">นำทาง</span></a>` : '';
+
     return `
     <div class="log-item">
       <div class="log-top">
         <span class="log-serial">${l.serial} ${trInfo.asset_no ? ' / ' + trInfo.asset_no : ''}</span>
-        <span class="log-time">${formattedTime}</span>
+        <div>
+          <span class="log-time" style="margin-right:8px;">${formattedTime}</span>
+          <i class="ti ti-edit" style="font-size:16px; color:var(--color-text-tertiary); cursor:pointer;" onclick="editLogModal(${l.id})" aria-hidden="true"></i>
+        </div>
       </div>
       <div class="log-row"><i class="ti ti-package" style="font-size:12px" aria-hidden="true"></i>${(trInfo.description || '').split(',')[0].replace('TR. ', '')} · SLoc ${trInfo.sloc || '-'}</div>
       <div class="log-row"><i class="ti ti-user" style="font-size:12px" aria-hidden="true"></i>${l.req_name}${l.location ? ' · ' + l.location : ''}</div>
-      ${l.gps ? `<div class="log-row" style="cursor:pointer" onclick="editGPS(${l.id}, '${l.gps}')"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i><span style="color:var(--color-info)">${l.gps}</span> <i class="ti ti-edit" style="font-size:11px;color:var(--color-text-tertiary)" aria-hidden="true"></i></div>` : ''}
+      ${l.gps ? `<div class="log-row">${gpsLink}</div>` : ''}
       ${l.note ? `<div class="log-row"><i class="ti ti-note" style="font-size:12px" aria-hidden="true"></i>${l.note}</div>` : ''}
     </div>`;
-  }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ยังไม่มีประวัติ</div>`;
+  }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ไม่พบข้อมูลที่ค้นหา</div>`;
 }
 
-async function editGPS(id, curGps) {
-  const val = prompt('แก้ไขพิกัด GPS (lat, lng):', curGps);
-  if (val !== null) {
-    updateHdrStatus('กำลังอัปเดต GPS...');
-    const { error } = await _supabase.from('logs').update({ gps: val }).eq('id', id);
-    if (error) showToast('แก้ไขล้มเหลว');
-    else { showToast('อัปเดต GPS แล้ว'); await initApp(); }
+// Modal แก้ไขประวัติ
+function editLogModal(logId) {
+  const log = logs.find(l => l.id === logId);
+  if(!log) return;
+  document.getElementById('modal-ttl').textContent = 'แก้ไขประวัติเบิกจ่าย';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="fl"><div class="fl-lbl">ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${log.req_name}"></div>
+    <div class="fl"><div class="fl-lbl">สถานที่ติดตั้ง</div><input type="text" id="edit-loc" value="${log.location || ''}"></div>
+    <div class="fl"><div class="fl-lbl">พิกัด GPS (lat,lng)</div><input type="text" id="edit-gps" value="${log.gps || ''}"></div>
+    <div class="fl"><div class="fl-lbl">หมายเหตุ</div><textarea id="edit-note">${log.note || ''}</textarea></div>
+    <button class="btn-primary" onclick="saveEditLog(${log.id})">บันทึกการแก้ไข</button>
+  `;
+  document.getElementById('modal-ov').classList.add('on');
+}
+
+async function saveEditLog(logId) {
+  const req = document.getElementById('edit-req').value.trim();
+  const loc = document.getElementById('edit-loc').value.trim();
+  const gps = document.getElementById('edit-gps').value.trim();
+  const note = document.getElementById('edit-note').value.trim();
+
+  if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
+
+  updateHdrStatus('กำลังบันทึก...');
+  const { error } = await _supabase.from('logs').update({
+    req_name: req, location: loc, gps: gps, note: note
+  }).eq('id', logId);
+
+  if (error) { showToast('แก้ไขล้มเหลว'); updateHdr(); } 
+  else {
+    showToast('บันทึกการแก้ไขเรียบร้อย');
+    closeModal(null);
+    await initApp(); 
   }
 }
 
-// ระบบ Settings 
+// Settings
 async function importFile(input) {
   const file = input.files[0];
   if (!file) return;
@@ -119,31 +185,25 @@ async function importFile(input) {
     const text = e.target.result;
     const parsed = parseIQ09(text);
     if (parsed.length === 0) {
-      document.getElementById('import-result').innerHTML = '<span style="color:var(--color-danger)">ไม่พบข้อมูลที่อ่านได้ กรุณาตรวจสอบรูปแบบไฟล์</span>';
-      return;
+      document.getElementById('import-result').innerHTML = '<span style="color:var(--color-danger)">ไม่พบข้อมูลที่อ่านได้</span>'; return;
     }
-    
     updateHdrStatus('กำลัง Upsert...');
     const dbPayload = parsed.map(p => ({
       serial: p.serial, mat: p.mat, description: p.desc, sloc: p.sloc, asset_no: p.assetNo, mfr: p.mfr, import_date: p.date
     }));
-
     const { error } = await _supabase.from('transformers').upsert(dbPayload, { onConflict: 'serial' });
-    
     if (error) { document.getElementById('import-result').innerHTML = '<span style="color:var(--color-danger)">เกิดข้อผิดพลาดในการบันทึก</span>'; } 
     else {
       document.getElementById('import-result').innerHTML = `<span style="color:var(--color-success)"><i class="ti ti-check" aria-hidden="true"></i> นำเข้าสำเร็จ ${parsed.length} รายการ</span>`;
       showToast(`นำเข้าสำเร็จ`); await initApp();
     }
   };
-  reader.readAsText(file, 'utf-8');
-  input.value = '';
+  reader.readAsText(file, 'utf-8'); input.value = '';
 }
 
 function parseIQ09(text) {
   const lines = text.split('\n');
   const result = [];
-  
   lines.forEach(line => {
     if (!line.includes('|')) return;
     const cols = line.split('|').map(c => c.trim());
