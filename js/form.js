@@ -6,21 +6,17 @@ function renderIssue() {
   const av = avail();
   const sSize = document.getElementById('s-size');
   
-  // สกัดเอาเฉพาะคำนำหน้า (เช่น TR., 30KVA) จากคำอธิบายแบบไม่ซ้ำกัน
   const uniqueSizes = [...new Set(av.map(i => {
     const match = i.description.match(/(TR.*?KVA)/i);
     return match ? match[1].trim() : i.description.split(',')[0].trim();
   }))];
 
-  // ยัดเข้า Dropdown แรก (ขนาด)
   sSize.innerHTML = '<option value="">-- เลือกขนาดหม้อแปลง --</option>' + 
     uniqueSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
     
-  // รีเซ็ต Dropdown ที่สอง (TR/SN) ให้ว่างก่อน
   document.getElementById('s-serial').innerHTML = '<option value="">-- เลือก TR/SN --</option>';
 }
 
-// ฟังก์ชันนี้จะทำงานเมื่อเปลี่ยน Dropdown ขนาดหม้อแปลง
 function filterSerialBySize() {
   const selectedSize = document.getElementById('s-size').value;
   const sel = document.getElementById('s-serial');
@@ -30,14 +26,12 @@ function filterSerialBySize() {
      return;
   }
   
-  // ดึงหม้อแปลงที่พร้อมเบิกและตรงกับขนาดที่เลือก
   const avFiltered = avail().filter(i => {
      const match = i.description.match(/(TR.*?KVA)/i);
      const sz = match ? match[1].trim() : i.description.split(',')[0].trim();
      return sz === selectedSize;
   });
   
-  // แสดงผลในรูปแบบ TR69-004177 / 6904866
   sel.innerHTML = '<option value="">-- เลือก TR/SN --</option>' +
     avFiltered.map(i => `<option value="${i.serial}">${i.serial} / ${i.asset_no || '-'}</option>`).join('');
 }
@@ -67,13 +61,10 @@ async function doIssue() {
     const { error: trErr } = await _supabase.from('transformers').update({ is_issued: true }).eq('serial', serial);
     if (trErr) throw trErr;
 
-    // เคลียร์ฟอร์ม
     ['s-size', 's-serial', 's-req', 's-loc', 's-note'].forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('s-gps').value = '';
     document.getElementById('gps-btn').className = 'btn-gps';
     document.getElementById('gps-btn').innerHTML = '<i class="ti ti-current-location" aria-hidden="true"></i>ดึง GPS';
-    
-    // รีเซ็ต Dropdown Serial
     document.getElementById('s-serial').innerHTML = '<option value="">-- เลือก TR/SN --</option>';
     
     showToast('เบิกจ่าย ' + serial + ' สำเร็จ');
