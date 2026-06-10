@@ -4,16 +4,17 @@
 
 function renderDash() {
   const totalRaw = RAW.length;
-  const writtenOff = RAW.filter(r => r.is_written_off).length; // จำนวนที่ตัดจ่ายแล้ว
+  const writtenOff = RAW.filter(r => r.is_written_off).length; 
   
-  const tot = totalRaw - writtenOff; // สต็อกทั้งหมด (หักที่ตัดจ่ายออกไปแล้ว)
-  const iss = RAW.filter(r => r.is_issued && !r.is_written_off).length; // รอตัดจ่าย (เบิกแล้วแต่ยังไม่ตัด)
-  const av = tot - iss; // คงเหลือพร้อมเบิก
+  const tot = totalRaw - writtenOff; 
+  const iss = RAW.filter(r => r.is_issued && !r.is_written_off).length; 
+  const av = tot - iss; 
   
+  // เพิ่ม onclick="showPg('pending')" ให้กล่องรอตัดจ่าย
   document.getElementById('kpi').innerHTML = `
     <div class="kpi"><div class="kpi-lbl">สต็อกทั้งหมด</div><div class="kpi-val">${tot}</div><div class="kpi-sub">รายการ</div></div>
     <div class="kpi"><div class="kpi-lbl">คงเหลือ</div><div class="kpi-val" style="color:var(--color-success)">${av}</div><div class="kpi-sub">พร้อมเบิก</div></div>
-    <div class="kpi"><div class="kpi-lbl">รอตัดจ่าย</div><div class="kpi-val" style="color:var(--color-warning)">${iss}</div><div class="kpi-sub">รายการ</div></div>
+    <div class="kpi" onclick="showPg('pending')" style="cursor:pointer; border:1px solid #fef08a; background:var(--color-bg-card); transition:transform 0.2s;"><div class="kpi-lbl">รอตัดจ่าย</div><div class="kpi-val" style="color:var(--color-warning)">${iss}</div><div class="kpi-sub" style="color:var(--color-warning); font-weight:500;">แตะเพื่อตัดจ่าย <i class="ti ti-arrow-right"></i></div></div>
     <div class="kpi"><div class="kpi-lbl">ตัดจ่ายแล้ว</div><div class="kpi-val" style="color:var(--color-danger)">${writtenOff}</div><div class="kpi-sub">รายการ</div></div>`;
 
   const slocs = ['0021', '0022', '8002'];
@@ -27,7 +28,6 @@ function renderDash() {
   let colTot = {}; slocs.forEach(s => { colTot[s] = 0; }); let grandTot = 0;
   
   mats.forEach(m => {
-    // ดึงเฉพาะของที่ยังไม่ถูกตัดจ่ายมาคำนวณในตาราง
     const mItems = RAW.filter(i => i.mat === m && !i.is_written_off);
     if(mItems.length === 0) return;
     const shortDesc = mItems[0].description.replace('TR. ', '').replace('TR.,', '').split(',').slice(0, 2).join(',');
@@ -37,7 +37,6 @@ function renderDash() {
     
     let rowTot = 0;
     slocs.forEach(s => {
-      // นับเฉพาะที่ยังไม่เบิก และ ยังไม่ตัดจ่าย
       const cnt = mItems.filter(i => i.sloc === s && !i.is_issued).length; 
       colTot[s] = (colTot[s] || 0) + cnt; 
       rowTot += cnt;

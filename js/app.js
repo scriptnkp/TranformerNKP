@@ -8,10 +8,10 @@ const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 let RAW = [];
 let logs = [];
-let slocF = 'all';
 let currentPg = 'dash';
 
 let currentLogPage = 1;
+let currentPendPage = 1; // ตัวแปรสำหรับแบ่งหน้าเมนูรอตัดจ่าย
 const logsPerPage = 10;
 
 async function initApp() {
@@ -49,61 +49,154 @@ function showPg(p) {
   document.querySelectorAll('.nav-tab').forEach(x => x.classList.remove('on'));
   
   document.getElementById('pg-' + p).classList.add('on');
-  const nm = ['dash', 'stock', 'issue', 'log'];
+  // ปรับการอ้างอิงเมนูใหม่: dash, issue, pending, log
+  const nm = ['dash', 'issue', 'pending', 'log'];
   const idx = nm.indexOf(p);
   if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('on');
   
   currentPg = p;
-  const fn = { dash: renderDash, stock: renderStock, issue: renderIssue, log: renderLog, settings: () => {} };
+  const fn = { dash: renderDash, issue: renderIssue, pending: renderPending, log: renderLog, settings: () => {} };
   if (fn[p]) fn[p]();
   updateHdr();
 }
 
-function renderStock() {
-  const slocs = ['all', '0021', '0022', '8002'];
-  const lbl = { all: 'ทั้งหมด', '0021': 'SLoc 0021', '0022': 'SLoc 0022', '8002': 'SLoc 8002' };
-  document.getElementById('sf').innerHTML = slocs.map(s => `<div class="pill ${slocF === s ? 'on' : ''}" onclick="setSloc('${s}')">${lbl[s]}</div>`).join('');
-  
-  const items = RAW.filter(i => (slocF === 'all' || i.sloc === slocF) && !i.is_issued && !i.is_written_off);
-  
-  const groupedItems = {};
-  items.forEach(i => {
-    const match = i.description.match(/(TR.*?KVA)/i);
-    const size = match ? match[1].trim() : i.description.split(',')[0].trim();
-    if(!groupedItems[size]) groupedItems[size] = [];
-    groupedItems[size].push(i);
+// 📦 ฟังก์ชันแสดงหน้ารอตัดจ่าย (Pending)
+function renderPending() {
+  const searchInput = document.getElementById('pend-search-input');
+  const sizeInput = document.getElementById('pend-size-input');
+
+  const searchTerm = searchInput.value.toLowerCase();
+  const selectedSize = sizeInput.value;
+
+  // ดึงเฉพาะงานที่ยังไม่มีเลขตัดจ่าย (ทุกเดือนรวมกัน)
+  const pendingLogsAll = logs.filter(l => !l.write_off_no);
+
+  const allSizes = [...new Set(pendingLogsAll.map(l => {
+    const trInfo = RAW.find(r => r.serial === l.serial) || {};
+    const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
+    return match ? match[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
+  }))].filter(Boolean);
+
+  sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+  if (allSizes.includes(selectedSize)) { sizeInput.value = selectedSize; }
+
+  const filteredLogs = pendingLogsAll.filter(l => {
+    const trInfo = RAW.find(r => r.serial === l.serial) || {};
+    const matchSizeStr = (trInfo.description || '').match(/(TR.*?KVA)/i);
+    const size = matchSizeStr ? matchSizeStr[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
+
+    const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
+                        (trInfo.asset_no || '').toLowerCase().includes(searchTerm) ||
+                        l.req_name.toLowerCase().includes(searchTerm) || 
+                        (l.location || '').toLowerCase().includes(searchTerm) ||
+                        (l.team || '').toLowerCase().includes(searchTerm) ||
+                        (l.wbs || '').toLowerCase().includes(searchTerm);
+                        
+    const matchSize = !sizeInput.value || size === sizeInput.value;
+
+    return (!searchTerm || matchSearch) && matchSize;
   });
 
-  let html = '';
-  if (items.length === 0) {
-     html = `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px;grid-column:1/-1;">ไม่มีรายการในคลัง</div>`;
-  } else {
-     for (const [size, sizeItems] of Object.entries(groupedItems)) {
-        html += `
-        <div style="grid-column: 1 / -1; margin-top: 16px; margin-bottom: 4px; padding-bottom: 8px; border-bottom: 2px solid var(--color-primary-light); color: var(--color-primary); font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="display:flex; align-items:center; gap:6px;"><i class="ti ti-bolt" style="font-size:18px;"></i> ${size}</span>
-          <span style="background: var(--color-primary-light); color: var(--color-primary); padding: 4px 10px; border-radius: 20px; font-size: 12px;">${sizeItems.length} เครื่อง</span>
-        </div>`;
-        
-        html += sizeItems.map(i => `
-          <div class="item">
-            <div class="item-top">
-              <span class="item-serial">${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}</span>
-              <span class="badge bg-ok">พร้อมเบิก</span>
-            </div>
-            <div class="item-desc">${i.description}</div>
-            <div class="item-meta">
-              <span class="badge bg-sloc">มีผลจาก ${i.import_date || '-'}</span>
-              <span style="font-size:10px;color:var(--color-text-tertiary)">${i.mfr || '-'}</span>
-            </div>
-          </div>`).join('');
+  const jobMap = {};
+  filteredLogs.forEach(l => {
+     const date = new Date(l.created_at);
+     const timeKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
+     const groupKey = `${timeKey}_${l.req_name}_${l.location}`;
+
+     if(!jobMap[groupKey]) {
+        jobMap[groupKey] = {
+           id: groupKey, logIds: [], created_at: l.created_at,
+           formattedTime: date.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' }),
+           req_name: l.req_name, team: l.team, location: l.location, gps: l.gps, wbs: l.wbs, write_off_no: l.write_off_no, items: []
+        };
      }
-  }
-  document.getElementById('stock-list').innerHTML = html;
+     jobMap[groupKey].logIds.push(l.id);
+
+     const trInfo = RAW.find(r => r.serial === l.serial) || {};
+     jobMap[groupKey].items.push({
+        serial: l.serial, asset_no: trInfo.asset_no, desc: trInfo.description, import_date: trInfo.import_date,
+        issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url
+     });
+  });
+
+  const jobGroups = Object.values(jobMap).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  window.currentJobGroups = jobGroups; 
+
+  const totalPages = Math.ceil(jobGroups.length / logsPerPage) || 1;
+  if (currentPendPage > totalPages) currentPendPage = totalPages;
+
+  const startIndex = (currentPendPage - 1) * logsPerPage;
+  const paginatedJobs = jobGroups.slice(startIndex, startIndex + logsPerPage);
+
+  document.getElementById('pend-count').textContent = `รอตัดจ่ายทั้งหมด ${jobGroups.length} งาน (${filteredLogs.length} เครื่อง)`;
+  
+  document.getElementById('pend-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
+    const cleanGPS = (job.gps || '').replace(/\s+/g, '');
+    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=$${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+
+    return `
+    <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1; border-left: 4px solid var(--color-warning);">
+      <div class="log-top" style="border-bottom: 1px dashed var(--color-border); padding-bottom: 12px; margin-bottom: 12px; align-items:flex-start;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="log-time" style="align-self:flex-start; margin:0;">${job.formattedTime}</span>
+          <span style="font-weight:700; color:var(--color-text-primary); font-size:15px; margin-top:4px;"><i class="ti ti-user" style="color:var(--color-primary);"></i> ${job.req_name}</span>
+        </div>
+        
+        <div style="display:flex; gap:10px; align-items:center;">
+           <button style="background:var(--color-warning-light); color:var(--color-warning); border:1px solid #fef08a; padding:5px 12px; border-radius:16px; font-size:11px; font-weight:600; cursor:pointer;" onclick="writeOffJobModal('${job.id}')">
+             <i class="ti ti-file-export"></i> บันทึกตัดจ่าย
+           </button>
+           <i class="ti ti-edit" style="font-size:22px; color:var(--color-text-tertiary); cursor:pointer;" onclick="editJobModal('${job.id}')" title="แก้ไขข้อมูลงานนี้" aria-hidden="true"></i>
+        </div>
+      </div>
+      
+      ${job.team ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-users"></i> <span style="color:var(--color-text-primary); font-weight:500;">ทีมงาน:</span> ${job.team}</div>` : ''}
+      ${job.location ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-map"></i> <span style="color:var(--color-text-primary); font-weight:500;">สถานที่:</span> ${job.location}</div>` : ''}
+      ${job.gps ? `<div class="log-row" style="margin-bottom:6px;">${gpsLink}</div>` : ''}
+      ${job.wbs ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-briefcase"></i> <span style="color:var(--color-text-primary); font-weight:500;">WBS:</span> ${job.wbs}</div>` : ''}
+      
+      <div style="margin-top:14px; background:var(--color-bg-secondary); border-radius:var(--radius-md); padding:12px; border:1px solid var(--color-border);">
+        <div style="font-size:12px; font-weight:700; color:var(--color-primary); margin-bottom:8px;">📦 รายการหม้อแปลง (${job.items.length} เครื่อง):</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${job.items.map(i => {
+            const match = (i.desc || '').match(/(TR.*?KVA)/i);
+            const sizeLabel = match ? match[1] : (i.desc || '').split(',').slice(0, 2).join(',');
+
+            const issueUrls = (i.issue_photo_url || '').split(',').filter(Boolean);
+            const installUrls = (i.install_photo_url || '').split(',').filter(Boolean);
+
+            let img1Html = issueUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe;"><i class="ti ti-photo" style="font-size:12px;"></i> เบิก ${idx+1}</a>`).join(' ');
+            let img2Html = installUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0;"><i class="ti ti-camera" style="font-size:12px;"></i> ติดตั้ง ${idx+1}</a>`).join(' ');
+
+            return `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:4px;">
+              <div>
+                <span style="font-weight:600; color:var(--color-text-primary);">${i.serial}</span> ${i.asset_no ? ' <span style="color:var(--color-text-tertiary);">/ '+i.asset_no+'</span>' : ''} <br> 
+                <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
+                ${(img1Html || img2Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html}</div>` : ''}
+              </div>
+              <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
+            </div>
+            `
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px;grid-column:1/-1;">🎉 ยอดเยี่ยม! ไม่มีงานรอตัดจ่ายเลย</div>`;
+
+  document.getElementById('pend-page-info').textContent = `หน้า ${currentPendPage} / ${totalPages}`;
+  document.getElementById('btn-prev-pend').disabled = currentPendPage === 1;
+  document.getElementById('btn-next-pend').disabled = currentPendPage === totalPages;
+  document.getElementById('btn-prev-pend').style.opacity = currentPendPage === 1 ? '0.5' : '1';
+  document.getElementById('btn-next-pend').style.opacity = currentPendPage === totalPages ? '0.5' : '1';
 }
 
-function setSloc(s) { slocF = s; renderStock(); }
+function changePendPage(dir) {
+  currentPendPage += dir;
+  renderPending();
+}
 
+// 🕰️ ฟังก์ชันแสดงหน้าประวัติทั้งหมด (Log)
 function renderLog() {
   const monthInput = document.getElementById('log-month-input');
   const searchInput = document.getElementById('log-search-input');
@@ -174,29 +267,17 @@ function renderLog() {
 
      if(!jobMap[groupKey]) {
         jobMap[groupKey] = {
-           id: groupKey,
-           logIds: [],
-           created_at: l.created_at,
+           id: groupKey, logIds: [], created_at: l.created_at,
            formattedTime: date.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' }),
-           req_name: l.req_name,
-           team: l.team, 
-           location: l.location,
-           gps: l.gps,
-           wbs: l.wbs,
-           write_off_no: l.write_off_no,
-           items: []
+           req_name: l.req_name, team: l.team, location: l.location, gps: l.gps, wbs: l.wbs, write_off_no: l.write_off_no, items: []
         };
      }
      jobMap[groupKey].logIds.push(l.id);
 
      const trInfo = RAW.find(r => r.serial === l.serial) || {};
      jobMap[groupKey].items.push({
-        serial: l.serial,
-        asset_no: trInfo.asset_no,
-        desc: trInfo.description,
-        import_date: trInfo.import_date,
-        issue_photo_url: l.issue_photo_url,
-        install_photo_url: l.install_photo_url
+        serial: l.serial, asset_no: trInfo.asset_no, desc: trInfo.description, import_date: trInfo.import_date,
+        issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url
      });
   });
 
@@ -213,7 +294,7 @@ function renderLog() {
   
   document.getElementById('log-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
-    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=$${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1;">
@@ -297,7 +378,6 @@ function getEditGPS() {
   }, { timeout: 10000 });
 }
 
-// 📦 ฟังก์ชันช่วยบีบอัดรูปภาพตอนกดหน้าแก้ไข (ยืมมาจากหน้าเบิก)
 async function compressImageForEdit(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -378,11 +458,8 @@ async function saveEditJob() {
   try {
     let newInstallUrls = [];
 
-    // ถ้ามีการแนบรูปภาพเพิ่มเข้ามาในโหมดแก้ไข
     if (files.length > 0) {
         const gasUrl = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
-        
-        // ดึงข้อมูลตัวแรกเพื่อใช้ตั้งชื่อโฟลเดอร์ให้ตรงกับงาน
         const job = window.currentJobGroups.find(g => g.logIds.includes(logIds[0]));
         const firstItem = job.items[0];
         const match = (firstItem.desc || '').match(/(TR.*?KVA)/i);
@@ -412,7 +489,6 @@ async function saveEditJob() {
         req_name: req, team: team, location: loc, gps: gps, wbs: wbs
     };
 
-    // หากมีการอัปรูปลงไปใหม่ ให้นำลิงก์ไปต่อท้ายของเดิม (Append)
     if (newInstallUrls.length > 0) {
         const job = window.currentJobGroups.find(g => g.logIds.includes(logIds[0]));
         const existingUrls = job.items[0].install_photo_url ? job.items[0].install_photo_url.split(',').filter(Boolean) : [];

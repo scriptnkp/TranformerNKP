@@ -18,7 +18,7 @@
   
   <div class="hdr">
     <div class="hdr-left">
-      <h1><i class="ti ti-bolt" aria-hidden="true"></i>คลังหม้อแปลง D060</h1>
+      <h1><i class="ti ti-bolt" aria-hidden="true"></i>Transformer Master(TRM)</h1>
       <p id="hdr-sub">กำลังเชื่อมต่อฐานข้อมูล...</p>
     </div>
     <div class="hdr-btn" onclick="showPg('settings')" aria-label="ตั้งค่า"><i class="ti ti-settings" aria-hidden="true"></i></div>
@@ -26,8 +26,8 @@
 
   <div class="nav">
     <div class="nav-tab on" onclick="showPg('dash')"><i class="ti ti-chart-bar" aria-hidden="true"></i>สรุป</div>
-    <div class="nav-tab" onclick="showPg('stock')"><i class="ti ti-package" aria-hidden="true"></i>สต็อก</div>
     <div class="nav-tab" onclick="showPg('issue')"><i class="ti ti-arrow-bar-right" aria-hidden="true"></i>เบิก</div>
+    <div class="nav-tab" onclick="showPg('pending')"><i class="ti ti-file-export" aria-hidden="true"></i>รอตัดจ่าย</div>
     <div class="nav-tab" onclick="showPg('log')"><i class="ti ti-history" aria-hidden="true"></i>ประวัติ</div>
   </div>
 
@@ -38,13 +38,6 @@
       <div style="overflow-x:auto">
         <table class="sloc-table" id="sloc-tbl"></table>
       </div>
-    </div>
-  </div>
-
-  <div class="pg" id="pg-stock">
-    <div class="sec">
-      <div class="filter-row" id="sf"></div>
-      <div id="stock-list"></div>
     </div>
   </div>
 
@@ -71,18 +64,9 @@
           <div id="cart-list" style="display:flex; flex-direction:column; gap:6px;"></div>
         </div>
         
-        <div class="fl">
-          <div class="fl-lbl">3. ผู้เบิก *</div>
-          <input type="text" id="s-req" placeholder="ชื่อผู้เบิก" />
-        </div>
-        <div class="fl">
-          <div class="fl-lbl">4. ทีมงาน</div>
-          <input type="text" id="s-team" placeholder="ชื่อทีมงาน / แผนก" />
-        </div>
-        <div class="fl">
-          <div class="fl-lbl">สถานที่ติดตั้ง</div>
-          <input type="text" id="s-loc" placeholder="ระบุสถานที่..." />
-        </div>
+        <div class="fl"><div class="fl-lbl">3. ผู้เบิก *</div><input type="text" id="s-req" placeholder="ชื่อผู้เบิก" /></div>
+        <div class="fl"><div class="fl-lbl">4. ทีมงาน</div><input type="text" id="s-team" placeholder="ชื่อทีมงาน / แผนก" /></div>
+        <div class="fl"><div class="fl-lbl">สถานที่ติดตั้ง</div><input type="text" id="s-loc" placeholder="ระบุสถานที่..." /></div>
         <div class="fl">
           <div class="fl-lbl">พิกัด GPS</div>
           <div class="gps-row">
@@ -90,10 +74,7 @@
             <button class="btn-gps" id="gps-btn" onclick="getGPS()"><i class="ti ti-current-location" aria-hidden="true"></i>ดึง GPS</button>
           </div>
         </div>
-        <div class="fl">
-          <div class="fl-lbl">WBS</div>
-          <input type="text" id="s-wbs" placeholder="รหัส WBS..." />
-        </div>
+        <div class="fl"><div class="fl-lbl">WBS</div><input type="text" id="s-wbs" placeholder="รหัส WBS..." /></div>
 
         <div class="fl">
           <div class="fl-lbl">แนบรูปถ่ายก่อนยก (เบิก)</div>
@@ -105,6 +86,26 @@
         </div>
         
         <button class="btn-primary" onclick="doIssueCart()"><i class="ti ti-check" aria-hidden="true"></i> ยืนยันเบิกจ่ายทั้งหมด</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pg" id="pg-pending">
+    <div class="sec">
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <select id="pend-size-input" style="flex:1; min-width:120px; padding:10px 12px;" onchange="currentPendPage=1; renderPending()">
+          <option value="">ทุกขนาด</option>
+        </select>
+        <input type="text" id="pend-search-input" placeholder="ค้นหา TR, ผู้เบิก, ทีมงาน..." style="flex:1; min-width:100%;" onkeyup="currentPendPage=1; renderPending()" />
+      </div>
+      
+      <p class="sec-ttl" id="pend-count"></p>
+      <div id="pend-list"></div>
+
+      <div id="pend-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:16px; border-top:1px dashed var(--color-border);">
+        <button class="pill" id="btn-prev-pend" onclick="changePendPage(-1)"><i class="ti ti-chevron-left" style="font-size:14px; vertical-align:-2px;"></i> ก่อนหน้า</button>
+        <span id="pend-page-info" style="font-size:12px; color:var(--color-text-secondary); font-weight:600;">หน้า 1 / 1</span>
+        <button class="pill" id="btn-next-pend" onclick="changePendPage(1)">ถัดไป <i class="ti ti-chevron-right" style="font-size:14px; vertical-align:-2px;"></i></button>
       </div>
     </div>
   </div>
@@ -137,8 +138,7 @@
       <div class="sett-ttl"><i class="ti ti-file-upload" aria-hidden="true"></i>นำเข้าข้อมูล IQ09</div>
       <div class="sett-desc">อัปโหลดไฟล์ .txt จาก SAP IQ09 เพื่ออัปเดตรายการหม้อแปลงทั้งหมด ข้อมูลเดิมจะถูกแทนที่</div>
       <div class="upload-zone" onclick="document.getElementById('file-in').click()">
-        <i class="ti ti-file-text" aria-hidden="true"></i>
-        แตะเพื่อเลือกไฟล์ .txt
+        <i class="ti ti-file-text" aria-hidden="true"></i> แตะเพื่อเลือกไฟล์ .txt
         <div style="font-size:11px;margin-top:4px;color:var(--color-text-tertiary)">รองรับ IQ09 format</div>
       </div>
       <input type="file" id="file-in" accept=".txt" style="display:none" onchange="importFile(this)">
