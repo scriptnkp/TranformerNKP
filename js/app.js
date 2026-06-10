@@ -132,7 +132,9 @@ function renderLog() {
     const matchSizeStr = (trInfo.description || '').match(/(TR.*?KVA)/i);
     const size = matchSizeStr ? matchSizeStr[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
 
+    // 👇 เพิ่มการค้นหาจากเลขประจำ (Asset No) ตรงบรรทัดที่ 2 ในนี้ครับ
     const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
+                        (trInfo.asset_no || '').toLowerCase().includes(searchTerm) || 
                         l.req_name.toLowerCase().includes(searchTerm) || 
                         (l.location || '').toLowerCase().includes(searchTerm) ||
                         (l.team || '').toLowerCase().includes(searchTerm) ||
@@ -142,7 +144,6 @@ function renderLog() {
 
     return (!searchTerm || matchSearch) && matchSize;
   });
-
   const sizeSummary = {};
   filteredLogs.forEach(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
