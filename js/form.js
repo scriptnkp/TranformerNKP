@@ -2,7 +2,7 @@
 // Module: Issue Form (Cart & Image Upload System)
 // ==========================================
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbw9Pro_fQkvnFDbSI2IpQNJ4DhV-Ot-NrlnzqlUoeU0/dev';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
 
 // ข้อมูล Bot Telegram
 const TELEGRAM_BOT_TOKEN = '8500752472:AAEcOqBZDYze4NMctxi1CBAWY7MblrqvUDU';
