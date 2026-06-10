@@ -134,7 +134,10 @@ function renderLog() {
 
     const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
                         l.req_name.toLowerCase().includes(searchTerm) || 
-                        (l.location || '').toLowerCase().includes(searchTerm);
+                        (l.location || '').toLowerCase().includes(searchTerm) ||
+                        (l.team || '').toLowerCase().includes(searchTerm) ||
+                        (l.wbs || '').toLowerCase().includes(searchTerm);
+                        
     const matchSize = !sizeInput.value || size === sizeInput.value;
 
     return (!searchTerm || matchSearch) && matchSize;
@@ -171,9 +174,10 @@ function renderLog() {
            created_at: l.created_at,
            formattedTime: date.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' }),
            req_name: l.req_name,
+           team: l.team, // นำข้อมูลทีมงานมาใช้งาน
            location: l.location,
            gps: l.gps,
-           note: l.note,
+           wbs: l.wbs,   // นำข้อมูล WBS มาใช้งาน
            items: []
         };
      }
@@ -213,15 +217,15 @@ function renderLog() {
         <i class="ti ti-edit" style="font-size:20px; color:var(--color-text-tertiary); cursor:pointer; align-self:flex-start;" onclick="editJobModal('${job.id}')" title="แก้ไขข้อมูลงานนี้" aria-hidden="true"></i>
       </div>
       
+      ${job.team ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-users"></i> <span style="color:var(--color-text-primary); font-weight:500;">ทีมงาน:</span> ${job.team}</div>` : ''}
       ${job.location ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-map"></i> <span style="color:var(--color-text-primary); font-weight:500;">สถานที่:</span> ${job.location}</div>` : ''}
       ${job.gps ? `<div class="log-row" style="margin-bottom:6px;">${gpsLink}</div>` : ''}
-      ${job.note ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-note"></i> <span style="color:var(--color-text-primary); font-weight:500;">หมายเหตุ:</span> ${job.note}</div>` : ''}
+      ${job.wbs ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-briefcase"></i> <span style="color:var(--color-text-primary); font-weight:500;">WBS:</span> ${job.wbs}</div>` : ''}
       
       <div style="margin-top:14px; background:var(--color-bg-secondary); border-radius:var(--radius-md); padding:12px; border:1px solid var(--color-border);">
         <div style="font-size:12px; font-weight:700; color:var(--color-primary); margin-bottom:8px;">📦 รายการหม้อแปลง (${job.items.length} เครื่อง):</div>
         <div style="display:flex; flex-direction:column; gap:8px;">
           ${job.items.map(i => {
-            // โค้ดที่ดึงขนาดหม้อแปลงแบบสมบูรณ์
             const match = (i.desc || '').match(/(TR.*?KVA)/i);
             const sizeLabel = match ? match[1] : (i.desc || '').split(',').slice(0, 2).join(',');
 
@@ -260,10 +264,11 @@ function editJobModal(jobId) {
 
   document.getElementById('modal-ttl').textContent = `แก้ไขประวัติเบิก (${job.items.length} เครื่อง)`;
   document.getElementById('modal-body').innerHTML = `
-    <div class="fl"><div class="fl-lbl">ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${job.req_name}"></div>
+    <div class="fl"><div class="fl-lbl">3. ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${job.req_name}"></div>
+    <div class="fl"><div class="fl-lbl">4. ทีมงาน</div><input type="text" id="edit-team" value="${job.team || ''}"></div>
     <div class="fl"><div class="fl-lbl">สถานที่ติดตั้ง</div><input type="text" id="edit-loc" value="${job.location || ''}"></div>
     <div class="fl"><div class="fl-lbl">พิกัด GPS (lat,lng)</div><input type="text" id="edit-gps" value="${job.gps || ''}"></div>
-    <div class="fl"><div class="fl-lbl">หมายเหตุ</div><textarea id="edit-note">${job.note || ''}</textarea></div>
+    <div class="fl"><div class="fl-lbl">WBS</div><input type="text" id="edit-wbs" value="${job.wbs || ''}"></div>
     <button class="btn-primary" onclick="saveEditJob()">บันทึกการแก้ไขทั้งงาน</button>
   `;
   document.getElementById('modal-ov').classList.add('on');
@@ -271,16 +276,17 @@ function editJobModal(jobId) {
 
 async function saveEditJob() {
   const req = document.getElementById('edit-req').value.trim();
+  const team = document.getElementById('edit-team').value.trim();
   const loc = document.getElementById('edit-loc').value.trim();
   const gps = document.getElementById('edit-gps').value.trim();
-  const note = document.getElementById('edit-note').value.trim();
+  const wbs = document.getElementById('edit-wbs').value.trim();
   const logIds = window.currentEditJobIds;
 
   if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
 
   updateHdrStatus('กำลังบันทึก...');
   const { error } = await _supabase.from('logs').update({
-    req_name: req, location: loc, gps: gps, note: note
+    req_name: req, team: team, location: loc, gps: gps, wbs: wbs
   }).in('id', logIds);
 
   if (error) { showToast('แก้ไขล้มเหลว'); updateHdr(); } 
@@ -330,8 +336,23 @@ function parseIQ09(text) {
 
 function exportCSV() {
   if (logs.length === 0) { showToast('ไม่มีประวัติ'); return; }
-  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,สถานที่,GPS,หมายเหตุ,วันที่บันทึก\n';
-  const rows = logs.map(l => [l.serial, '"' + (l.note || '') + '"', l.req_name, l.location || '', l.gps || '', l.note || '', l.created_at].join(',')).join('\n');
+  // อัปเดตโครงสร้าง CSV ให้มีครบทุกคอลัมน์
+  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,ทีมงาน,สถานที่,GPS,WBS,วันที่บันทึก\n';
+  const rows = logs.map(l => {
+    const trInfo = RAW.find(r => r.serial === l.serial) || {};
+    const desc = (trInfo.description || '').replace(/"/g, '""'); // ป้องกัน Error ถ้าในคำอธิบายมีฟันหนู
+    return [
+      l.serial, 
+      '"' + desc + '"', 
+      l.req_name, 
+      l.team || '', 
+      l.location || '', 
+      l.gps || '', 
+      l.wbs || '', 
+      l.created_at
+    ].join(',');
+  }).join('\n');
+  
   const blob = new Blob(['\ufeff' + hdr + rows], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'issue_log.csv'; a.click();
 }

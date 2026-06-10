@@ -78,7 +78,6 @@ function renderCartUI() {
     container.style.display = 'block';
     count.textContent = issueCart.length;
     list.innerHTML = issueCart.map(i => {
-      // ดึงขนาดหม้อแปลงแบบเต็มๆ 
       const match = (i.description || '').match(/(TR.*?KVA)/i);
       const sizeLabel = match ? match[1] : (i.description || '').split(',').slice(0, 2).join(',');
 
@@ -100,11 +99,12 @@ async function doIssueCart() {
   if (issueCart.length === 0) { showToast('ยังไม่มีเครื่องในรายการ กรุณาเลือกแล้วกด "เพิ่ม" ก่อน'); return; }
   
   const req = document.getElementById('s-req').value.trim();
-  if (!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
-  
-  const gps = document.getElementById('s-gps').value.trim();
+  const team = document.getElementById('s-team').value.trim();
   const loc = document.getElementById('s-loc').value.trim();
-  const note = document.getElementById('s-note').value.trim();
+  const gps = document.getElementById('s-gps').value.trim();
+  const wbs = document.getElementById('s-wbs').value.trim();
+  
+  if (!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
   
   updateHdrStatus('กำลังบันทึกข้อมูลเข้าระบบ...');
 
@@ -112,9 +112,10 @@ async function doIssueCart() {
     const logsPayload = issueCart.map(item => ({
       serial: item.serial,
       req_name: req,
+      team: team,     // ดึงข้อมูลทีมงาน
       location: loc,
       gps: gps,
-      note: note
+      wbs: wbs        // ดึงข้อมูล WBS
     }));
 
     const { error: logErr } = await _supabase.from('logs').insert(logsPayload);
@@ -127,7 +128,7 @@ async function doIssueCart() {
 
     issueCart = [];
     renderCartUI();
-    ['s-size', 's-serial', 's-req', 's-loc', 's-note'].forEach(id => { document.getElementById(id).value = ''; });
+    ['s-size', 's-serial', 's-req', 's-team', 's-loc', 's-wbs'].forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('s-gps').value = '';
     document.getElementById('gps-btn').className = 'btn-gps';
     document.getElementById('gps-btn').innerHTML = '<i class="ti ti-current-location" aria-hidden="true"></i>ดึง GPS';
@@ -137,7 +138,7 @@ async function doIssueCart() {
     
   } catch (error) {
     console.error(error);
-    showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+    showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาตรวจสอบฐานข้อมูล');
     updateHdr();
   }
 }

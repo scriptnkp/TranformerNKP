@@ -31,7 +31,6 @@
     <div class="nav-tab" onclick="showPg('log')"><i class="ti ti-history" aria-hidden="true"></i>ประวัติ</div>
   </div>
 
-  <!-- Page 1: Dashboard -->
   <div class="pg on" id="pg-dash">
     <div class="sec">
       <div class="kpi-grid" id="kpi"></div>
@@ -42,7 +41,6 @@
     </div>
   </div>
 
-  <!-- Page 2: Stock -->
   <div class="pg" id="pg-stock">
     <div class="sec">
       <div class="filter-row" id="sf"></div>
@@ -50,7 +48,6 @@
     </div>
   </div>
 
-  <!-- Page 3: Issue Form (ระบบตะกร้าเบิก) -->
   <div class="pg" id="pg-issue">
     <div class="sec">
       <div class="form-card">
@@ -69,7 +66,6 @@
           </div>
         </div>
         
-        <!-- รายการรอเบิก (Cart) -->
         <div id="cart-container" style="display:none; margin-bottom:16px; padding:12px; border:1px dashed var(--color-primary); border-radius:var(--radius-md); background:var(--color-primary-light);">
           <div style="font-size:12px; font-weight:600; color:var(--color-primary); margin-bottom:8px;">📦 รายการเตรียมเบิก (<span id="cart-count">0</span> เครื่อง)</div>
           <div id="cart-list" style="display:flex; flex-direction:column; gap:6px;"></div>
@@ -77,7 +73,11 @@
         
         <div class="fl">
           <div class="fl-lbl">3. ผู้เบิก *</div>
-          <input type="text" id="s-req" placeholder="ชื่อผู้เบิก / แผนก" />
+          <input type="text" id="s-req" placeholder="ชื่อผู้เบิก" />
+        </div>
+        <div class="fl">
+          <div class="fl-lbl">4. ทีมงาน</div>
+          <input type="text" id="s-team" placeholder="ชื่อทีมงาน / แผนก" />
         </div>
         <div class="fl">
           <div class="fl-lbl">สถานที่ติดตั้ง</div>
@@ -91,8 +91,8 @@
           </div>
         </div>
         <div class="fl">
-          <div class="fl-lbl">หมายเหตุ</div>
-          <textarea id="s-note" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+          <div class="fl-lbl">WBS</div>
+          <input type="text" id="s-wbs" placeholder="รหัส WBS..." />
         </div>
         
         <button class="btn-primary" onclick="doIssueCart()"><i class="ti ti-check" aria-hidden="true"></i> ยืนยันเบิกจ่ายทั้งหมด</button>
@@ -100,7 +100,6 @@
     </div>
   </div>
 
-  <!-- Page 4: History Log -->
   <div class="pg" id="pg-log">
     <div class="sec">
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -124,7 +123,6 @@
     </div>
   </div>
 
-  <!-- Page 5: Settings -->
   <div class="pg" id="pg-settings">
     <div class="sett-sec">
       <div class="sett-ttl"><i class="ti ti-file-upload" aria-hidden="true"></i>นำเข้าข้อมูล IQ09</div>
@@ -151,7 +149,6 @@
 
 </div>
 
-<!-- Modal Overlay -->
 <div class="overlay" id="modal-ov" onclick="closeModal(event)">
   <div class="modal" id="modal-box">
     <div class="modal-hdr">
@@ -162,11 +159,9 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 </div>
 
-<!-- JavaScript Files -->
 <script src="js/dashboard.js"></script>
 <script src="js/form.js"></script>
 <script src="js/app.js"></script>
