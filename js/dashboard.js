@@ -59,10 +59,13 @@ function showSlocModal(mat, title, sloc) {
   document.getElementById('modal-body').innerHTML = items.length ? items.map(i => `
     <div class="modal-item">
       <div>
-        <div style="font-size:12px;font-weight:600;color:var(--color-text-primary)">
+        <div style="font-size:13px;font-weight:600;color:var(--color-text-primary)">
           ${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}
         </div>
-        <div style="font-size:10px;color:var(--color-text-tertiary);margin-top:2px">${i.mfr || 'ไม่ระบุผู้ผลิต'} · SLoc ${i.sloc}</div>
+        <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">${i.mfr || 'ไม่ระบุผู้ผลิต'}</div>
+        <div style="font-size:11px;color:var(--color-primary);margin-top:2px;font-weight:500;">
+          <i class="ti ti-calendar"></i> มีผลจาก ${i.import_date || '-'}
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span class="badge bg-ok">พร้อมเบิก</span>

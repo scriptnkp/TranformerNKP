@@ -56,6 +56,7 @@ function showPg(p) {
   updateHdr();
 }
 
+// 📦 หน้า Stock: มีเส้นแบ่งขนาดอย่างสวยงาม
 function renderStock() {
   const slocs = ['all', '0021', '0022', '8002'];
   const lbl = { all: 'ทั้งหมด', '0021': 'SLoc 0021', '0022': 'SLoc 0022', '8002': 'SLoc 8002' };
@@ -63,22 +64,48 @@ function renderStock() {
   
   const items = RAW.filter(i => (slocF === 'all' || i.sloc === slocF) && !i.is_issued);
   
-  document.getElementById('stock-list').innerHTML = items.length ? items.map(i => `
-    <div class="item">
-      <div class="item-top">
-        <span class="item-serial">${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}</span>
-        <span class="badge bg-ok">พร้อมเบิก</span>
-      </div>
-      <div class="item-desc">${i.description}</div>
-      <div class="item-meta">
-        <span class="badge bg-sloc">${i.sloc}</span>
-        <span style="font-size:10px;color:var(--color-text-tertiary)">${i.mfr || '-'}</span>
-      </div>
-    </div>`).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ไม่มีรายการในคลัง</div>`;
+  // จัดกลุ่มตามขนาด (Size)
+  const groupedItems = {};
+  items.forEach(i => {
+    const match = i.description.match(/(TR.*?KVA)/i);
+    const size = match ? match[1].trim() : i.description.split(',')[0].trim();
+    if(!groupedItems[size]) groupedItems[size] = [];
+    groupedItems[size].push(i);
+  });
+
+  let html = '';
+  if (items.length === 0) {
+     html = `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px;grid-column:1/-1;">ไม่มีรายการในคลัง</div>`;
+  } else {
+     for (const [size, sizeItems] of Object.entries(groupedItems)) {
+        // สร้างเส้นแบ่งขนาด (Divider)
+        html += `
+        <div style="grid-column: 1 / -1; margin-top: 16px; margin-bottom: 4px; padding-bottom: 8px; border-bottom: 2px solid var(--color-primary-light); color: var(--color-primary); font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="display:flex; align-items:center; gap:6px;"><i class="ti ti-bolt" style="font-size:18px;"></i> ${size}</span>
+          <span style="background: var(--color-primary-light); color: var(--color-primary); padding: 4px 10px; border-radius: 20px; font-size: 12px;">${sizeItems.length} เครื่อง</span>
+        </div>`;
+        
+        // วาดการ์ดหม้อแปลงภายใต้ขนาดนั้นๆ
+        html += sizeItems.map(i => `
+          <div class="item">
+            <div class="item-top">
+              <span class="item-serial">${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}</span>
+              <span class="badge bg-ok">พร้อมเบิก</span>
+            </div>
+            <div class="item-desc">${i.description}</div>
+            <div class="item-meta">
+              <span class="badge bg-sloc">มีผลจาก ${i.import_date || '-'}</span>
+              <span style="font-size:10px;color:var(--color-text-tertiary)">${i.mfr || '-'}</span>
+            </div>
+          </div>`).join('');
+     }
+  }
+  document.getElementById('stock-list').innerHTML = html;
 }
 
 function setSloc(s) { slocF = s; renderStock(); }
 
+// 🕰️ หน้า Log: จัดกลุ่มเป็น "งานๆ ไป" (Job Card)
 function renderLog() {
   const monthInput = document.getElementById('log-month-input');
   const searchInput = document.getElementById('log-search-input');
@@ -118,6 +145,7 @@ function renderLog() {
     return (!searchTerm || matchSearch) && matchSize;
   });
 
+  // สรุปยอดเบิก
   const sizeSummary = {};
   filteredLogs.forEach(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
@@ -136,34 +164,85 @@ function renderLog() {
   }
   document.getElementById('log-summary').innerHTML = summaryHTML;
 
-  const totalPages = Math.ceil(filteredLogs.length / logsPerPage) || 1;
+  // 📦 จัดกลุ่ม Log ให้เป็น "งาน (Job)"
+  const jobMap = {};
+  filteredLogs.forEach(l => {
+     // ใช้ วัน-เวลา(นาที) + ชื่อผู้เบิก + สถานที่ เป็น Key ของแต่ละงาน
+     const date = new Date(l.created_at);
+     const timeKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
+     const groupKey = `${timeKey}_${l.req_name}_${l.location}`;
+
+     if(!jobMap[groupKey]) {
+        jobMap[groupKey] = {
+           id: groupKey,
+           logIds: [],
+           created_at: l.created_at,
+           formattedTime: date.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' }),
+           req_name: l.req_name,
+           location: l.location,
+           gps: l.gps,
+           note: l.note,
+           items: []
+        };
+     }
+     jobMap[groupKey].logIds.push(l.id);
+
+     const trInfo = RAW.find(r => r.serial === l.serial) || {};
+     jobMap[groupKey].items.push({
+        serial: l.serial,
+        asset_no: trInfo.asset_no,
+        desc: trInfo.description,
+        import_date: trInfo.import_date
+     });
+  });
+
+  const jobGroups = Object.values(jobMap).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  window.currentJobGroups = jobGroups; // เก็บไว้ใช้ตอนกดแก้ไข
+
+  const totalPages = Math.ceil(jobGroups.length / logsPerPage) || 1;
   if (currentLogPage > totalPages) currentLogPage = totalPages;
 
   const startIndex = (currentLogPage - 1) * logsPerPage;
-  const paginatedLogs = filteredLogs.slice(startIndex, startIndex + logsPerPage);
+  const paginatedJobs = jobGroups.slice(startIndex, startIndex + logsPerPage);
 
-  document.getElementById('log-count').textContent = `รายการเบิก (ทั้งหมด ${filteredLogs.length} รายการ)`;
-  document.getElementById('log-list').innerHTML = paginatedLogs.length ? paginatedLogs.map((l) => {
-    const formattedTime = new Date(l.created_at).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' });
-    const trInfo = RAW.find(r => r.serial === l.serial) || {};
-    const cleanGPS = (l.gps || '').replace(/\s+/g, '');
-    const gpsLink = l.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${l.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+  document.getElementById('log-count').textContent = `ประวัติทั้งหมด ${jobGroups.length} งาน (${filteredLogs.length} เครื่อง)`;
+  
+  // วาดการ์ด Job 
+  document.getElementById('log-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
+    // แก้ไขลิงก์ Google Maps อย่างเป็นทางการ
+    const cleanGPS = (job.gps || '').replace(/\s+/g, '');
+    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
-    <div class="log-item">
-      <div class="log-top">
-        <span class="log-serial">${l.serial} ${trInfo.asset_no ? ' / ' + trInfo.asset_no : ''}</span>
-        <div>
-          <span class="log-time" style="margin-right:8px;">${formattedTime}</span>
-          <i class="ti ti-edit" style="font-size:16px; color:var(--color-text-tertiary); cursor:pointer;" onclick="editLogModal(${l.id})" aria-hidden="true"></i>
+    <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1;">
+      <div class="log-top" style="border-bottom: 1px dashed var(--color-border); padding-bottom: 12px; margin-bottom: 12px;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="log-time" style="align-self:flex-start; margin:0;">${job.formattedTime}</span>
+          <span style="font-weight:700; color:var(--color-text-primary); font-size:15px; margin-top:4px;"><i class="ti ti-user" style="color:var(--color-primary);"></i> ${job.req_name}</span>
+        </div>
+        <i class="ti ti-edit" style="font-size:20px; color:var(--color-text-tertiary); cursor:pointer; align-self:flex-start;" onclick="editJobModal('${job.id}')" title="แก้ไขข้อมูลงานนี้" aria-hidden="true"></i>
+      </div>
+      
+      ${job.location ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-map"></i> <span style="color:var(--color-text-primary); font-weight:500;">สถานที่:</span> ${job.location}</div>` : ''}
+      ${job.gps ? `<div class="log-row" style="margin-bottom:6px;">${gpsLink}</div>` : ''}
+      ${job.note ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-note"></i> <span style="color:var(--color-text-primary); font-weight:500;">หมายเหตุ:</span> ${job.note}</div>` : ''}
+      
+      <div style="margin-top:14px; background:var(--color-bg-secondary); border-radius:var(--radius-md); padding:12px; border:1px solid var(--color-border);">
+        <div style="font-size:12px; font-weight:700; color:var(--color-primary); margin-bottom:8px;">📦 รายการหม้อแปลง (${job.items.length} เครื่อง):</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${job.items.map(i => `
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
+              <div>
+                <span style="font-weight:600; color:var(--color-text-primary);">${i.serial}</span> ${i.asset_no ? ' <span style="color:var(--color-text-tertiary);">/ '+i.asset_no+'</span>' : ''} <br> 
+                <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${(i.desc||'').split(',')[0].replace('TR. ', '')}</span>
+              </div>
+              <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card);">มีผลจาก ${i.import_date || '-'}</span>
+            </div>
+          `).join('')}
         </div>
       </div>
-      <div class="log-row"><i class="ti ti-package" style="font-size:12px" aria-hidden="true"></i>${(trInfo.description || '').split(',')[0].replace('TR. ', '')} · SLoc ${trInfo.sloc || '-'}</div>
-      <div class="log-row"><i class="ti ti-user" style="font-size:12px" aria-hidden="true"></i>${l.req_name}${l.location ? ' · ' + l.location : ''}</div>
-      ${l.gps ? `<div class="log-row">${gpsLink}</div>` : ''}
-      ${l.note ? `<div class="log-row"><i class="ti ti-note" style="font-size:12px" aria-hidden="true"></i>${l.note}</div>` : ''}
     </div>`;
-  }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px">ไม่พบข้อมูลที่ค้นหา</div>`;
+  }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px;grid-column:1/-1;">ไม่พบข้อมูลที่ค้นหา</div>`;
 
   document.getElementById('log-page-info').textContent = `หน้า ${currentLogPage} / ${totalPages}`;
   document.getElementById('btn-prev-page').disabled = currentLogPage === 1;
@@ -177,32 +256,38 @@ function changeLogPage(dir) {
   renderLog();
 }
 
-function editLogModal(logId) {
-  const log = logs.find(l => l.id === logId);
-  if(!log) return;
-  document.getElementById('modal-ttl').textContent = 'แก้ไขประวัติเบิกจ่าย';
+// ✏️ แก้ไขข้อมูลเป็นราย "งาน"
+function editJobModal(jobId) {
+  const job = window.currentJobGroups.find(g => g.id === jobId);
+  if(!job) return;
+  
+  window.currentEditJobIds = job.logIds; // เก็บ ID ทั้งหมดของงานนี้ไว้
+
+  document.getElementById('modal-ttl').textContent = `แก้ไขประวัติเบิก (${job.items.length} เครื่อง)`;
   document.getElementById('modal-body').innerHTML = `
-    <div class="fl"><div class="fl-lbl">ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${log.req_name}"></div>
-    <div class="fl"><div class="fl-lbl">สถานที่ติดตั้ง</div><input type="text" id="edit-loc" value="${log.location || ''}"></div>
-    <div class="fl"><div class="fl-lbl">พิกัด GPS (lat,lng)</div><input type="text" id="edit-gps" value="${log.gps || ''}"></div>
-    <div class="fl"><div class="fl-lbl">หมายเหตุ</div><textarea id="edit-note">${log.note || ''}</textarea></div>
-    <button class="btn-primary" onclick="saveEditLog(${log.id})">บันทึกการแก้ไข</button>
+    <div class="fl"><div class="fl-lbl">ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${job.req_name}"></div>
+    <div class="fl"><div class="fl-lbl">สถานที่ติดตั้ง</div><input type="text" id="edit-loc" value="${job.location || ''}"></div>
+    <div class="fl"><div class="fl-lbl">พิกัด GPS (lat,lng)</div><input type="text" id="edit-gps" value="${job.gps || ''}"></div>
+    <div class="fl"><div class="fl-lbl">หมายเหตุ</div><textarea id="edit-note">${job.note || ''}</textarea></div>
+    <button class="btn-primary" onclick="saveEditJob()">บันทึกการแก้ไขทั้งงาน</button>
   `;
   document.getElementById('modal-ov').classList.add('on');
 }
 
-async function saveEditLog(logId) {
+async function saveEditJob() {
   const req = document.getElementById('edit-req').value.trim();
   const loc = document.getElementById('edit-loc').value.trim();
   const gps = document.getElementById('edit-gps').value.trim();
   const note = document.getElementById('edit-note').value.trim();
+  const logIds = window.currentEditJobIds;
 
   if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
 
   updateHdrStatus('กำลังบันทึก...');
+  // อัปเดตข้อมูลทุก Log ID ที่อยู่ในงานนี้พร้อมกัน
   const { error } = await _supabase.from('logs').update({
     req_name: req, location: loc, gps: gps, note: note
-  }).eq('id', logId);
+  }).in('id', logIds);
 
   if (error) { showToast('แก้ไขล้มเหลว'); updateHdr(); } 
   else {
@@ -212,6 +297,7 @@ async function saveEditLog(logId) {
   }
 }
 
+// Settings
 async function importFile(input) {
   const file = input.files[0];
   if (!file) return;
