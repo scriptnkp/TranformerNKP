@@ -2,7 +2,6 @@
 // Module: Core Application & Supabase Init
 // ==========================================
 
-// CONFIGURATION (ใส่ API ของคุณเรียบร้อยแล้ว)
 const supabaseUrl = 'https://foplvudtvujxyxsibuck.supabase.co'; 
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvcGx2dWR0dnVqeHl4c2lidWNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5ODgzMzYsImV4cCI6MjA5NjU2NDMzNn0.h-BNhShuEarCUA0ozpYm6g9rUKET6ddJSYrCLmCQavc';
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -83,7 +82,7 @@ function renderStock() {
 
 function setSloc(s) { slocF = s; renderStock(); }
 
-// หน้า Log (ประวัติ - พร้อมระบบ Pagination และ Filter ขนาด)
+// หน้า Log (ประวัติเบิก)
 function renderLog() {
   const monthInput = document.getElementById('log-month-input');
   const searchInput = document.getElementById('log-search-input');
@@ -93,39 +92,48 @@ function renderLog() {
   
   const currentMonth = monthInput.value;
   const searchTerm = searchInput.value.toLowerCase();
+  
+  // เก็บค่าขนาดที่ผู้ใช้เลือกไว้ก่อนหน้า
   const selectedSize = sizeInput.value;
 
-  // 1. ดึงขนาดหม้อแปลงทั้งหมดใส่ Dropdown
-  const allSizes = [...new Set(logs.map(l => {
+  // 1. กรองประวัติตามเดือน เพื่อเอามาสร้าง Dropdown ขนาด
+  const logsInMonth = logs.filter(l => {
+    const logDate = new Date(l.created_at);
+    const logYYYYMM = logDate.getFullYear() + '-' + String(logDate.getMonth() + 1).padStart(2, '0');
+    return logYYYYMM === currentMonth;
+  });
+
+  // 2. ดึงขนาดแบบไม่ซ้ำจากประวัติของเดือนนี้
+  const allSizes = [...new Set(logsInMonth.map(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
     const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
     return match ? match[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
   }))].filter(Boolean);
 
-  if (sizeInput.options.length <= 1 && allSizes.length > 0) {
-    sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+  // สร้าง Dropdown ใหม่ทุกครั้งที่มีการ Render
+  sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+  
+  // คืนค่าที่เลือกไว้กลับไป (ถ้าค่าเก่ายังมีอยู่ในเดือนนี้)
+  if (allSizes.includes(selectedSize)) {
     sizeInput.value = selectedSize;
   }
 
-  // 2. กรองข้อมูล
-  const filteredLogs = logs.filter(l => {
-    const logDate = new Date(l.created_at);
-    const logYYYYMM = logDate.getFullYear() + '-' + String(logDate.getMonth() + 1).padStart(2, '0');
-    
+  // 3. กรองข้อมูลทั้งหมด (คำค้นหา + ขนาดที่เลือก)
+  const filteredLogs = logsInMonth.filter(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
     const matchSizeStr = (trInfo.description || '').match(/(TR.*?KVA)/i);
     const size = matchSizeStr ? matchSizeStr[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
 
-    const matchMonth = logYYYYMM === currentMonth;
     const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
                         l.req_name.toLowerCase().includes(searchTerm) || 
                         (l.location || '').toLowerCase().includes(searchTerm);
-    const matchSize = !selectedSize || size === selectedSize;
+    
+    const matchSize = !sizeInput.value || size === sizeInput.value;
 
-    return matchMonth && (!searchTerm || matchSearch) && matchSize;
+    return (!searchTerm || matchSearch) && matchSize;
   });
 
-  // 3. สรุปยอด
+  // 4. สรุปยอด
   const sizeSummary = {};
   filteredLogs.forEach(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
@@ -144,22 +152,22 @@ function renderLog() {
   }
   document.getElementById('log-summary').innerHTML = summaryHTML;
 
-  // 4. Pagination
+  // 5. Pagination
   const totalPages = Math.ceil(filteredLogs.length / logsPerPage) || 1;
   if (currentLogPage > totalPages) currentLogPage = totalPages;
 
   const startIndex = (currentLogPage - 1) * logsPerPage;
   const paginatedLogs = filteredLogs.slice(startIndex, startIndex + logsPerPage);
 
-  // 5. วาดรายการ
+  // 6. วาดรายการ
   document.getElementById('log-count').textContent = `รายการเบิก (ทั้งหมด ${filteredLogs.length} รายการ)`;
   document.getElementById('log-list').innerHTML = paginatedLogs.length ? paginatedLogs.map((l) => {
     const formattedTime = new Date(l.created_at).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: '2-digit' });
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
     
-    // สร้างลิงก์นำทางให้สมบูรณ์
+    // แก้ไขลิงก์นำทาง GPS ให้ดึงเข้า Google Maps อย่างถูกต้อง
     const cleanGPS = (l.gps || '').replace(/\s+/g, '');
-    const gpsLink = l.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${l.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = l.gps ? `<a href="https://maps.google.com/?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${l.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item">
