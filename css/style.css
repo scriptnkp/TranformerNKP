@@ -5,107 +5,60 @@
 :root {
   --font-sans: 'Inter', 'Sarabun', sans-serif;
   --font-mono: monospace;
-  
-  /* Modern Vibrant Palette */
-  --color-primary: #3b82f6;       /* Blue 500 - สว่างและมีชีวิตชีวา */
+  --color-primary: #3b82f6;       
   --color-primary-hover: #2563eb;
   --color-primary-light: #eff6ff;
-  
-  --color-bg-body: #f1f5f9;       /* สีพื้นหลังสำหรับ Desktop */
+  --color-bg-body: #f1f5f9;       
   --color-bg-card: #ffffff;
   --color-bg-secondary: #f8fafc;
-  
-  /* Text Color */
   --color-text-primary: #0f172a;  
   --color-text-secondary: #475569;
   --color-text-tertiary: #94a3b8; 
-  
-  /* Status Colors */
-  --color-success: #10b981;
-  --color-bg-success: #ecfdf5;
-  --color-danger: #ef4444;
-  --color-bg-danger: #fef2f2;
-  --color-info: #0ea5e9;
-  --color-bg-info: #f0f9ff;
-  --color-warning: #f59e0b;
-  --color-bg-warning: #fffbeb;
-  
+  --color-success: #10b981; --color-bg-success: #ecfdf5;
+  --color-danger: #ef4444;  --color-bg-danger: #fef2f2;
+  --color-info: #0ea5e9;    --color-bg-info: #f0f9ff;
+  --color-warning: #f59e0b; --color-bg-warning: #fffbeb;
   --color-border: #e2e8f0;
   
-  /* Premium Shadows & Radius */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  --shadow-float: 0 25px 50px -12px rgb(0 0 0 / 0.15); /* เงาสำหรับโหมด PC */
+  --shadow-float: 0 25px 50px -12px rgb(0 0 0 / 0.15);
   
-  --radius-xl: 24px;
-  --radius-lg: 16px;
-  --radius-md: 10px;
+  --radius-xl: 24px; --radius-lg: 16px; --radius-md: 10px;
 }
 
-body {
-  background-color: var(--color-bg-body);
-  /* เพิ่มพื้นหลังแบบมีมิติอ่อนๆ บน PC */
-  background-image: radial-gradient(circle at top right, #e0e7ff 0%, transparent 40%),
-                    radial-gradient(circle at bottom left, #dbeafe 0%, transparent 40%);
-  background-attachment: fixed;
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
-
+body { background-color: var(--color-bg-body); color: var(--color-text-primary); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 
-/* =======================================================
-   Responsive Layout (Mobile / iPad / PC)
-======================================================= */
 .app {
-  max-width: 800px; /* ขยายความกว้างเพื่อรองรับ iPad/PC */
-  margin: 40px auto; /* สร้างเป็นกรอบลอยบนจอใหญ่ */
-  min-height: calc(100vh - 80px);
-  background: var(--color-bg-card);
-  box-shadow: var(--shadow-float);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
+  max-width: 800px; margin: 40px auto; min-height: calc(100vh - 80px);
+  background: var(--color-bg-card); box-shadow: var(--shadow-float);
+  border-radius: var(--radius-xl); overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
 }
 
-/* ถ้าเป็นมือถือ (จอเล็กกว่า 768px) ให้แสดงผลเต็มจอ ไม่มีขอบ ไม่มีเงา */
 @media (max-width: 768px) {
   body { background: var(--color-bg-card); }
-  .app { 
-    margin: 0; 
-    min-height: 100vh; 
-    border-radius: 0; 
-    box-shadow: none; 
-    padding-bottom: 72px; /* เผื่อที่ให้ Toast notification */
-  }
+  .app { margin: 0; min-height: 100vh; border-radius: 0; box-shadow: none; padding-bottom: 72px; }
 }
 
-/* =======================================================
-   Header & Navigation
-======================================================= */
+/* ================== เปลี่ยน Header เป็นสีน้ำเงินเด่นชัด ================== */
 .hdr {
-  padding: 24px 24px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--color-bg-card);
-  border-bottom: 1px solid var(--color-border);
+  padding: 24px 24px 16px; display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6); /* Gradient Blue */
+  border-bottom: none;
 }
-.hdr-left h1 { font-size: 18px; font-weight: 700; color: var(--color-text-primary); display: flex; align-items: center; }
-.hdr-left h1 i { color: var(--color-warning); font-size: 20px !important; margin-right: 6px; }
-.hdr-left p { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
+.hdr-left h1 { font-size: 18px; font-weight: 700; color: #ffffff; display: flex; align-items: center; }
+.hdr-left h1 i { color: #fcd34d; font-size: 20px !important; margin-right: 6px; }
+.hdr-left p { font-size: 13px; color: #bfdbfe; margin-top: 4px; }
 .hdr-btn {
   width: 40px; height: 40px; border-radius: 50%;
-  background: var(--color-bg-secondary);
+  background: rgba(255,255,255,0.2); border: none;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 20px; color: var(--color-text-secondary);
-  transition: all 0.2s; border: 1px solid transparent;
+  cursor: pointer; font-size: 20px; color: white; transition: all 0.2s;
 }
-.hdr-btn:hover { background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary-light); transform: rotate(15deg); }
+.hdr-btn:hover { background: rgba(255,255,255,0.3); transform: rotate(15deg); }
 
 .nav {
   display: flex; padding: 8px 16px; gap: 8px;
@@ -114,8 +67,7 @@ body {
 }
 .nav-tab {
   flex: 1; padding: 10px 4px; font-size: 13px; text-align: center;
-  color: var(--color-text-secondary); cursor: pointer;
-  border-radius: var(--radius-md); transition: all 0.2s ease;
+  color: var(--color-text-secondary); cursor: pointer; border-radius: var(--radius-md); transition: all 0.2s ease;
   display: flex; flex-direction: column; align-items: center; gap: 6px; font-weight: 500;
 }
 .nav-tab i { font-size: 22px; transition: transform 0.2s; }
@@ -123,9 +75,6 @@ body {
 .nav-tab.on { background: var(--color-primary-light); color: var(--color-primary); font-weight: 600; }
 .nav-tab.on i { transform: scale(1.1); }
 
-/* =======================================================
-   Content Sections
-======================================================= */
 .pg { display: none; padding: 0; animation: fadeIn 0.3s ease; flex: 1; }
 .pg.on { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -133,31 +82,18 @@ body {
 .sec { padding: 20px 24px; }
 .sec-ttl { font-size: 12px; font-weight: 700; color: var(--color-text-tertiary); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 12px; }
 
-/* =======================================================
-   KPI Dashboard
-======================================================= */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
-.kpi { 
-  background: var(--color-bg-card); border: 1px solid var(--color-border); 
-  border-radius: var(--radius-lg); padding: 16px; 
-  box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s;
-  position: relative; overflow: hidden;
-}
+.kpi { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
 .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-/* แถบสีตกแต่งด้านซ้ายของ KPI */
 .kpi::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 4px 0 0 4px; }
 .kpi:nth-child(1)::before { background: var(--color-primary); }
 .kpi:nth-child(2)::before { background: var(--color-success); }
 .kpi:nth-child(3)::before { background: var(--color-danger); }
 .kpi:nth-child(4)::before { background: var(--color-warning); }
-
 .kpi-lbl { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; font-weight: 500; }
 .kpi-val { font-size: 28px; font-weight: 700; color: var(--color-text-primary); line-height: 1; }
 .kpi-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 6px; }
 
-/* =======================================================
-   Tables
-======================================================= */
 .sloc-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--color-border); box-shadow: var(--shadow-sm); }
 .sloc-table thead tr { background: var(--color-bg-secondary); }
 .sloc-table th { font-size: 12px; font-weight: 600; color: var(--color-text-secondary); padding: 12px 14px; text-align: right; border-bottom: 1px solid var(--color-border); }
@@ -167,12 +103,9 @@ body {
 .sloc-table td:first-child { text-align: left; color: var(--color-text-secondary); }
 .sloc-table tr.total-row td { font-weight: 600; background: var(--color-primary-light); color: var(--color-primary); }
 .sloc-row-clickable { cursor: pointer; }
-.sloc-row-clickable:hover td { background: var(--color-bg-secondary); }
+.sloc-row-clickable:hover { background: #f1f5f9; }
 .mat-code { font-size: 11px; color: var(--color-text-tertiary); font-family: var(--font-mono); margin-top: 4px; }
 
-/* =======================================================
-   Badges & Filters
-======================================================= */
 .badge { display: inline-flex; align-items: center; font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; letter-spacing: 0.2px; }
 .bg-ok { background: var(--color-bg-success); color: var(--color-success); border: 1px solid #a7f3d0; }
 .bg-out { background: var(--color-bg-danger); color: var(--color-danger); border: 1px solid #fecaca; }
@@ -183,93 +116,41 @@ body {
 .pill:hover { border-color: var(--color-primary-light); background: var(--color-primary-light); color: var(--color-primary); }
 .pill.on { background: var(--color-primary); color: white; border-color: var(--color-primary); box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3); }
 
-/* =======================================================
-   Lists (Stock & Log) - ปรับเป็น 2 คอลัมน์ บนจอใหญ่
-======================================================= */
-#stock-list, #log-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-@media (min-width: 600px) {
-  #stock-list, #log-list { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-}
+#stock-list, #log-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 600px) { #stock-list, #log-list { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
 
-.item, .log-item { 
-  background: var(--color-bg-card); border: 1px solid var(--color-border); 
-  border-radius: var(--radius-lg); padding: 16px; cursor: pointer; 
-  box-shadow: var(--shadow-sm); transition: all 0.2s; 
-  display: flex; flex-direction: column; justify-content: center;
-}
+.item, .log-item { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 16px; cursor: pointer; box-shadow: var(--shadow-sm); transition: all 0.2s; display: flex; flex-direction: column; justify-content: center; }
 .item:hover, .log-item:hover { border-color: var(--color-primary); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-
 .item-top, .log-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
 .item-serial, .log-serial { font-size: 14px; font-weight: 700; color: var(--color-text-primary); }
 .item-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
 .item-meta { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; flex-wrap: wrap; align-items: center; }
-
 .log-time { font-size: 12px; font-weight: 500; color: var(--color-primary); background: var(--color-primary-light); padding: 4px 8px; border-radius: 8px; }
 .log-row { font-size: 13px; color: var(--color-text-secondary); margin-top: 6px; display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
-.log-row i { margin-top: 2px; }
 
-/* =======================================================
-   Forms & Inputs
-======================================================= */
 .form-card { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-md); }
 .form-card h3 { font-size: 16px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
 .fl { margin-bottom: 16px; }
 .fl-lbl { font-size: 13px; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 8px; }
-
-select, input[type=text], input[type=month], textarea { 
-  width: 100%; font-size: 14px; padding: 12px 14px; 
-  border-radius: var(--radius-md); border: 1px solid var(--color-border); 
-  background: var(--color-bg-secondary); color: var(--color-text-primary); 
-  outline: none; transition: all 0.2s; font-family: var(--font-sans);
-}
-select:focus, input[type=text]:focus, input[type=month]:focus, textarea:focus { 
-  border-color: var(--color-primary); background: var(--color-bg-card); 
-  box-shadow: 0 0 0 3px var(--color-primary-light); 
-}
+select, input[type=text], input[type=month], textarea { width: 100%; font-size: 14px; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-bg-secondary); color: var(--color-text-primary); outline: none; transition: all 0.2s; font-family: var(--font-sans); }
+select:focus, input[type=text]:focus, input[type=month]:focus, textarea:focus { border-color: var(--color-primary); background: var(--color-bg-card); box-shadow: 0 0 0 3px var(--color-primary-light); }
 textarea { resize: none; height: 80px; }
 
 .gps-row { display: flex; gap: 8px; align-items: center; }
-.btn-gps { 
-  padding: 12px 16px; border-radius: var(--radius-md); border: none; 
-  background: var(--color-primary-light); color: var(--color-primary); 
-  cursor: pointer; font-size: 13px; font-weight: 600; 
-  display: flex; align-items: center; gap: 6px; transition: all 0.2s; 
-}
+.btn-gps { padding: 12px 16px; border-radius: var(--radius-md); border: none; background: var(--color-primary-light); color: var(--color-primary); cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
 .btn-gps:hover { background: #dbeafe; }
 .btn-gps.got { background: var(--color-bg-success); color: var(--color-success); }
 
-/* ปุ่มสีทึบ (Gradient Button) */
-.btn-primary { 
-  width: 100%; padding: 14px; 
-  background: linear-gradient(135deg, var(--color-primary), #2563eb); 
-  color: white; border: none; border-radius: var(--radius-md); 
-  font-size: 15px; font-weight: 600; cursor: pointer; 
-  transition: all 0.2s; margin-top: 8px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-}
+.btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--color-primary), #2563eb); color: white; border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 8px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3); }
-.btn-primary:active { transform: translateY(0); }
 
-/* =======================================================
-   Settings & Modals
-======================================================= */
 .sett-sec { border-bottom: 1px solid var(--color-border); padding: 20px 24px; }
 .sett-sec:last-child { border-bottom: none; }
 .sett-ttl { font-size: 15px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
 .sett-desc { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; margin-bottom: 16px; }
-
-.upload-zone { 
-  border: 2px dashed #cbd5e1; border-radius: var(--radius-lg); 
-  padding: 32px 20px; text-align: center; color: var(--color-text-secondary); 
-  cursor: pointer; font-size: 14px; font-weight: 500; transition: all .2s; 
-  background: var(--color-bg-secondary);
-}
+.upload-zone { border: 2px dashed #cbd5e1; border-radius: var(--radius-lg); padding: 32px 20px; text-align: center; color: var(--color-text-secondary); cursor: pointer; font-size: 14px; font-weight: 500; transition: all .2s; background: var(--color-bg-secondary); }
 .upload-zone:hover { border-color: var(--color-primary); background: var(--color-primary-light); color: var(--color-primary); }
 .upload-zone i { font-size: 36px; display: block; margin-bottom: 12px; color: inherit; }
-
 .danger-btn { padding: 12px 20px; border-radius: var(--radius-md); border: 1px solid var(--color-danger); color: var(--color-danger); background: var(--color-bg-card); cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
 .danger-btn:hover { background: var(--color-danger); color: white; }
 
