@@ -34,12 +34,15 @@ async function initApp() {
 
 function updateHdrStatus(text) { document.getElementById('hdr-sub').textContent = text; }
 function updateHdr() {
-  const tot = RAW.length;
-  const iss = RAW.filter(r => r.is_issued).length;
-  document.getElementById('hdr-sub').textContent = `${tot} รายการ · คงเหลือ ${tot - iss} · เบิกแล้ว ${iss}`;
+  const writtenOff = RAW.filter(r => r.is_written_off).length;
+  const tot = RAW.length - writtenOff; 
+  const iss = RAW.filter(r => r.is_issued && !r.is_written_off).length; 
+  const av = tot - iss; 
+
+  document.getElementById('hdr-sub').textContent = `${tot} รายการ · คงเหลือ ${av} · รอตัดจ่าย ${iss} · ตัดจ่ายแล้ว ${writtenOff}`;
 }
 
-function avail() { return RAW.filter(x => !x.is_issued); }
+function avail() { return RAW.filter(x => !x.is_issued && !x.is_written_off); }
 
 function showPg(p) {
   document.querySelectorAll('.pg').forEach(x => x.classList.remove('on'));
@@ -61,7 +64,7 @@ function renderStock() {
   const lbl = { all: 'ทั้งหมด', '0021': 'SLoc 0021', '0022': 'SLoc 0022', '8002': 'SLoc 8002' };
   document.getElementById('sf').innerHTML = slocs.map(s => `<div class="pill ${slocF === s ? 'on' : ''}" onclick="setSloc('${s}')">${lbl[s]}</div>`).join('');
   
-  const items = RAW.filter(i => (slocF === 'all' || i.sloc === slocF) && !i.is_issued);
+  const items = RAW.filter(i => (slocF === 'all' || i.sloc === slocF) && !i.is_issued && !i.is_written_off);
   
   const groupedItems = {};
   items.forEach(i => {
@@ -137,7 +140,8 @@ function renderLog() {
                         l.req_name.toLowerCase().includes(searchTerm) || 
                         (l.location || '').toLowerCase().includes(searchTerm) ||
                         (l.team || '').toLowerCase().includes(searchTerm) ||
-                        (l.wbs || '').toLowerCase().includes(searchTerm);
+                        (l.wbs || '').toLowerCase().includes(searchTerm) ||
+                        (l.write_off_no || '').toLowerCase().includes(searchTerm);
                         
     const matchSize = !sizeInput.value || size === sizeInput.value;
 
@@ -178,7 +182,8 @@ function renderLog() {
            team: l.team, 
            location: l.location,
            gps: l.gps,
-           wbs: l.wbs,   
+           wbs: l.wbs,
+           write_off_no: l.write_off_no,
            items: []
         };
      }
@@ -212,18 +217,25 @@ function renderLog() {
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1;">
-      <div class="log-top" style="border-bottom: 1px dashed var(--color-border); padding-bottom: 12px; margin-bottom: 12px;">
+      <div class="log-top" style="border-bottom: 1px dashed var(--color-border); padding-bottom: 12px; margin-bottom: 12px; align-items:flex-start;">
         <div style="display:flex; flex-direction:column; gap:4px;">
           <span class="log-time" style="align-self:flex-start; margin:0;">${job.formattedTime}</span>
           <span style="font-weight:700; color:var(--color-text-primary); font-size:15px; margin-top:4px;"><i class="ti ti-user" style="color:var(--color-primary);"></i> ${job.req_name}</span>
         </div>
-        <i class="ti ti-edit" style="font-size:20px; color:var(--color-text-tertiary); cursor:pointer; align-self:flex-start;" onclick="editJobModal('${job.id}')" title="แก้ไขข้อมูลงานนี้" aria-hidden="true"></i>
+        
+        <div style="display:flex; gap:10px; align-items:center;">
+           <button style="background:${job.write_off_no ? 'var(--color-bg-success)' : 'var(--color-warning-light)'}; color:${job.write_off_no ? 'var(--color-success)' : 'var(--color-warning)'}; border:1px solid ${job.write_off_no ? '#bbf7d0' : '#fef08a'}; padding:5px 12px; border-radius:16px; font-size:11px; font-weight:600; cursor:pointer;" onclick="writeOffJobModal('${job.id}')">
+             <i class="ti ${job.write_off_no ? 'ti-check' : 'ti-file-export'}"></i> ${job.write_off_no ? 'ตัดจ่ายแล้ว' : 'ตัดจ่าย'}
+           </button>
+           <i class="ti ti-edit" style="font-size:22px; color:var(--color-text-tertiary); cursor:pointer;" onclick="editJobModal('${job.id}')" title="แก้ไขข้อมูลงานนี้" aria-hidden="true"></i>
+        </div>
       </div>
       
       ${job.team ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-users"></i> <span style="color:var(--color-text-primary); font-weight:500;">ทีมงาน:</span> ${job.team}</div>` : ''}
       ${job.location ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-map"></i> <span style="color:var(--color-text-primary); font-weight:500;">สถานที่:</span> ${job.location}</div>` : ''}
       ${job.gps ? `<div class="log-row" style="margin-bottom:6px;">${gpsLink}</div>` : ''}
       ${job.wbs ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-briefcase"></i> <span style="color:var(--color-text-primary); font-weight:500;">WBS:</span> ${job.wbs}</div>` : ''}
+      ${job.write_off_no ? `<div class="log-row" style="margin-bottom:6px;"><i class="ti ti-file-export" style="color:var(--color-danger)"></i> <span style="color:var(--color-text-primary); font-weight:500;">เลขตัดจ่าย:</span> <span style="color:var(--color-danger); font-weight:600;">${job.write_off_no}</span></div>` : ''}
       
       <div style="margin-top:14px; background:var(--color-bg-secondary); border-radius:var(--radius-md); padding:12px; border:1px solid var(--color-border);">
         <div style="font-size:12px; font-weight:700; color:var(--color-primary); margin-bottom:8px;">📦 รายการหม้อแปลง (${job.items.length} เครื่อง):</div>
@@ -232,7 +244,6 @@ function renderLog() {
             const match = (i.desc || '').match(/(TR.*?KVA)/i);
             const sizeLabel = match ? match[1] : (i.desc || '').split(',').slice(0, 2).join(',');
 
-            // --- แปลงรูปหลายรูปลงใน Array แล้วสร้างปุ่มลิงก์ ---
             const issueUrls = (i.issue_photo_url || '').split(',').filter(Boolean);
             const installUrls = (i.install_photo_url || '').split(',').filter(Boolean);
 
@@ -286,6 +297,33 @@ function getEditGPS() {
   }, { timeout: 10000 });
 }
 
+// 📦 ฟังก์ชันช่วยบีบอัดรูปภาพตอนกดหน้าแก้ไข (ยืมมาจากหน้าเบิก)
+async function compressImageForEdit(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const max_dim = 1200; 
+        if(width > max_dim || height > max_dim) {
+          if(width > height) { height *= max_dim / width; width = max_dim; }
+          else { width *= max_dim / height; height = max_dim; }
+        }
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const base64Str = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]; 
+        resolve(base64Str);
+      }
+    }
+  });
+}
+
 function editJobModal(jobId) {
   const job = window.currentJobGroups.find(g => g.id === jobId);
   if(!job) return;
@@ -308,6 +346,12 @@ function editJobModal(jobId) {
     </div>
     
     <div class="fl"><div class="fl-lbl">WBS</div><input type="text" id="edit-wbs" value="${job.wbs || ''}"></div>
+    
+    <div class="fl">
+      <div class="fl-lbl">แนบรูปถ่ายหลังติดตั้ง (อัปโหลดเพิ่มเติม)</div>
+      <input type="file" id="edit-install-photo" accept="image/*" multiple style="font-size:12px; padding:8px; width:100%; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary);" />
+    </div>
+
     <button class="btn-primary" id="btn-save-edit" onclick="saveEditJob()">บันทึกการแก้ไขทั้งงาน</button>
   `;
   document.getElementById('modal-ov').classList.add('on');
@@ -320,18 +364,64 @@ async function saveEditJob() {
   const gps = document.getElementById('edit-gps').value.trim();
   const wbs = document.getElementById('edit-wbs').value.trim();
   const logIds = window.currentEditJobIds;
+  
+  const photoInput = document.getElementById('edit-install-photo');
+  const files = photoInput ? photoInput.files : [];
 
   if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
 
   const saveBtn = document.getElementById('btn-save-edit');
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="ti ti-loader ti-spin" aria-hidden="true"></i> กำลังบันทึก...';
-  updateHdrStatus('กำลังบันทึก...');
+  updateHdrStatus('กำลังบันทึกข้อมูล...');
 
   try {
-    const { error } = await _supabase.from('logs').update({
-      req_name: req, team: team, location: loc, gps: gps, wbs: wbs
-    }).in('id', logIds);
+    let newInstallUrls = [];
+
+    // ถ้ามีการแนบรูปภาพเพิ่มเข้ามาในโหมดแก้ไข
+    if (files.length > 0) {
+        const gasUrl = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
+        
+        // ดึงข้อมูลตัวแรกเพื่อใช้ตั้งชื่อโฟลเดอร์ให้ตรงกับงาน
+        const job = window.currentJobGroups.find(g => g.logIds.includes(logIds[0]));
+        const firstItem = job.items[0];
+        const match = (firstItem.desc || '').match(/(TR.*?KVA)/i);
+        const sizeFolderName = match ? match[1].trim().replace(/[\/\\?%*:|"<>]/g, '-') : 'ไม่ระบุขนาด';
+        const d = new Date();
+        const dStr = String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + (d.getFullYear());
+
+        for (let i = 0; i < files.length; i++) {
+            updateHdrStatus(`กำลังอัปโหลดรูปภาพติดตั้งเพิ่มเติม (${i+1}/${files.length})...`);
+            let b64 = await compressImageForEdit(files[i]);
+            const response = await fetch(gasUrl, {
+                method: 'POST',
+                body: JSON.stringify({
+                    size: sizeFolderName,
+                    installFileName: `02_${firstItem.serial}_${dStr}_edit_${i+1}.jpg`,
+                    installPhotoBase64: b64
+                })
+            });
+            const resData = await response.json();
+            if (resData.status === 'success') {
+                resData.data.forEach(d => { if(d.type === 'install') newInstallUrls.push(d.url); });
+            }
+        }
+    }
+
+    let updatePayload = {
+        req_name: req, team: team, location: loc, gps: gps, wbs: wbs
+    };
+
+    // หากมีการอัปรูปลงไปใหม่ ให้นำลิงก์ไปต่อท้ายของเดิม (Append)
+    if (newInstallUrls.length > 0) {
+        const job = window.currentJobGroups.find(g => g.logIds.includes(logIds[0]));
+        const existingUrls = job.items[0].install_photo_url ? job.items[0].install_photo_url.split(',').filter(Boolean) : [];
+        const finalUrls = [...existingUrls, ...newInstallUrls].join(',');
+        updatePayload.install_photo_url = finalUrls;
+    }
+
+    updateHdrStatus('กำลังอัปเดตฐานข้อมูล...');
+    const { error } = await _supabase.from('logs').update(updatePayload).in('id', logIds);
 
     if (error) { 
       showToast('แก้ไขล้มเหลว'); 
@@ -341,9 +431,70 @@ async function saveEditJob() {
       closeModal(null);
       await initApp(); 
     }
+  } catch (err) {
+      console.error(err);
+      showToast('เกิดข้อผิดพลาดในการบันทึกรูปภาพ');
+      updateHdr();
+  } finally {
+      if(saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = 'บันทึกการแก้ไขทั้งงาน';
+      }
+  }
+}
+
+function writeOffJobModal(jobId) {
+  const job = window.currentJobGroups.find(g => g.id === jobId);
+  if(!job) return;
+
+  window.currentEditJobIds = job.logIds;
+  window.currentEditSerials = job.items.map(i => i.serial); 
+
+  document.getElementById('modal-ttl').textContent = `บันทึกเลขตัดจ่าย (${job.items.length} เครื่อง)`;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="fl">
+      <div class="fl-lbl" style="color:var(--color-danger); font-weight:600;"><i class="ti ti-file-export"></i> เลขตัดจ่าย SAP</div>
+      <input type="text" id="edit-writeoff" value="${job.write_off_no || ''}" placeholder="ระบุเลขตัดจ่าย (เว้นว่างเพื่อยกเลิกตัดจ่าย)..." style="border-color:var(--color-danger); font-weight:600;">
+      <div style="font-size:11px; color:var(--color-text-tertiary); margin-top:6px;">* เมื่อบันทึกเลขแล้ว หม้อแปลงชุดนี้จะถูกหักออกจาก "สต็อกทั้งหมด" ในหน้าแดชบอร์ดทันที</div>
+    </div>
+    <button class="btn-primary" id="btn-save-writeoff" onclick="saveWriteOffJob()" style="background:var(--color-danger); border-color:var(--color-danger); margin-top:8px;">บันทึกการตัดจ่าย</button>
+  `;
+  document.getElementById('modal-ov').classList.add('on');
+}
+
+async function saveWriteOffJob() {
+  const writeOffNo = document.getElementById('edit-writeoff').value.trim();
+  const logIds = window.currentEditJobIds;
+  const serials = window.currentEditSerials;
+
+  const saveBtn = document.getElementById('btn-save-writeoff');
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="ti ti-loader ti-spin" aria-hidden="true"></i> กำลังบันทึก...';
+  updateHdrStatus('กำลังบันทึก...');
+
+  const isWrittenOff = writeOffNo !== ''; 
+
+  try {
+    const { error: logErr } = await _supabase.from('logs').update({
+      write_off_no: writeOffNo
+    }).in('id', logIds);
+    if (logErr) throw logErr;
+
+    const { error: trErr } = await _supabase.from('transformers').update({
+      is_written_off: isWrittenOff
+    }).in('serial', serials);
+    if (trErr) throw trErr;
+
+    showToast('บันทึกเลขตัดจ่ายเรียบร้อย');
+    closeModal(null);
+    await initApp();
+  } catch (err) {
+    console.error(err);
+    showToast('บันทึกตัดจ่ายล้มเหลว');
+    updateHdr();
   } finally {
     saveBtn.disabled = false;
-    saveBtn.innerHTML = 'บันทึกการแก้ไขทั้งงาน';
+    saveBtn.innerHTML = 'บันทึกการตัดจ่าย';
   }
 }
 
@@ -386,7 +537,7 @@ function parseIQ09(text) {
 
 function exportCSV() {
   if (logs.length === 0) { showToast('ไม่มีประวัติ'); return; }
-  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,ทีมงาน,สถานที่,GPS,WBS,วันที่บันทึก,ลิงก์รูปเบิก,ลิงก์รูปติดตั้ง\n';
+  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,ทีมงาน,สถานที่,GPS,WBS,เลขตัดจ่าย,วันที่บันทึก,ลิงก์รูปเบิก,ลิงก์รูปติดตั้ง\n';
   const rows = logs.map(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
     const desc = (trInfo.description || '').replace(/"/g, '""'); 
@@ -397,7 +548,8 @@ function exportCSV() {
       l.team || '', 
       l.location || '', 
       l.gps || '', 
-      l.wbs || '', 
+      l.wbs || '',
+      l.write_off_no || '', 
       l.created_at,
       l.issue_photo_url || '',
       l.install_photo_url || ''
@@ -413,7 +565,7 @@ async function resetAll() {
   updateHdrStatus('กำลังล้างข้อมูล...');
   try {
     await _supabase.from('logs').delete().neq('id', 0);
-    await _supabase.from('transformers').update({ is_issued: false }).neq('serial', 'dummy');
+    await _supabase.from('transformers').update({ is_issued: false, is_written_off: false }).neq('serial', 'dummy');
     showToast('รีเซ็ตฐานข้อมูลเรียบร้อยแล้ว'); await initApp();
   } catch (error) { showToast('การรีเซ็ตล้มเหลว'); updateHdr(); }
 }

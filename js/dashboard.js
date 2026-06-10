@@ -3,15 +3,18 @@
 // ==========================================
 
 function renderDash() {
-  const tot = RAW.length;
-  const iss = RAW.filter(r => r.is_issued).length;
-  const av = tot - iss;
+  const totalRaw = RAW.length;
+  const writtenOff = RAW.filter(r => r.is_written_off).length; // จำนวนที่ตัดจ่ายแล้ว
+  
+  const tot = totalRaw - writtenOff; // สต็อกทั้งหมด (หักที่ตัดจ่ายออกไปแล้ว)
+  const iss = RAW.filter(r => r.is_issued && !r.is_written_off).length; // รอตัดจ่าย (เบิกแล้วแต่ยังไม่ตัด)
+  const av = tot - iss; // คงเหลือพร้อมเบิก
   
   document.getElementById('kpi').innerHTML = `
     <div class="kpi"><div class="kpi-lbl">สต็อกทั้งหมด</div><div class="kpi-val">${tot}</div><div class="kpi-sub">รายการ</div></div>
     <div class="kpi"><div class="kpi-lbl">คงเหลือ</div><div class="kpi-val" style="color:var(--color-success)">${av}</div><div class="kpi-sub">พร้อมเบิก</div></div>
-    <div class="kpi"><div class="kpi-lbl">เบิกแล้ว</div><div class="kpi-val" style="color:var(--color-danger)">${iss}</div><div class="kpi-sub">รายการ</div></div>
-    <div class="kpi"><div class="kpi-lbl">ประวัติคลัง</div><div class="kpi-val">${logs.length}</div><div class="kpi-sub">ครั้ง</div></div>`;
+    <div class="kpi"><div class="kpi-lbl">รอตัดจ่าย</div><div class="kpi-val" style="color:var(--color-warning)">${iss}</div><div class="kpi-sub">รายการ</div></div>
+    <div class="kpi"><div class="kpi-lbl">ตัดจ่ายแล้ว</div><div class="kpi-val" style="color:var(--color-danger)">${writtenOff}</div><div class="kpi-sub">รายการ</div></div>`;
 
   const slocs = ['0021', '0022', '8002'];
   const mats = [...new Set(RAW.map(i => i.mat))];
@@ -24,7 +27,8 @@ function renderDash() {
   let colTot = {}; slocs.forEach(s => { colTot[s] = 0; }); let grandTot = 0;
   
   mats.forEach(m => {
-    const mItems = RAW.filter(i => i.mat === m);
+    // ดึงเฉพาะของที่ยังไม่ถูกตัดจ่ายมาคำนวณในตาราง
+    const mItems = RAW.filter(i => i.mat === m && !i.is_written_off);
     if(mItems.length === 0) return;
     const shortDesc = mItems[0].description.replace('TR. ', '').replace('TR.,', '').split(',').slice(0, 2).join(',');
     
@@ -33,6 +37,7 @@ function renderDash() {
     
     let rowTot = 0;
     slocs.forEach(s => {
+      // นับเฉพาะที่ยังไม่เบิก และ ยังไม่ตัดจ่าย
       const cnt = mItems.filter(i => i.sloc === s && !i.is_issued).length; 
       colTot[s] = (colTot[s] || 0) + cnt; 
       rowTot += cnt;
@@ -52,7 +57,7 @@ function renderDash() {
 }
 
 function showSlocModal(mat, title, sloc) {
-  const items = RAW.filter(i => i.mat === mat && !i.is_issued && (sloc === 'all' || i.sloc === sloc));
+  const items = RAW.filter(i => i.mat === mat && !i.is_issued && !i.is_written_off && (sloc === 'all' || i.sloc === sloc));
   const slocLabel = sloc === 'all' ? 'ทุก SLoc' : `SLoc ${sloc}`;
   document.getElementById('modal-ttl').textContent = `${title.trim()} (${slocLabel} - ${items.length} รายการ)`;
   
