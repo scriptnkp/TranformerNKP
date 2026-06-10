@@ -77,17 +77,22 @@ function renderCartUI() {
   } else {
     container.style.display = 'block';
     count.textContent = issueCart.length;
-    list.innerHTML = issueCart.map(i => `
+    list.innerHTML = issueCart.map(i => {
+      // ดึงขนาดหม้อแปลงแบบเต็มๆ 
+      const match = (i.description || '').match(/(TR.*?KVA)/i);
+      const sizeLabel = match ? match[1] : (i.description || '').split(',').slice(0, 2).join(',');
+
+      return `
       <div style="display:flex; justify-content:space-between; align-items:center; background:var(--color-bg-card); padding:10px 12px; border-radius:var(--radius-md); border:1px solid var(--color-border); font-size:12px; box-shadow:var(--shadow-sm);">
         <div>
           <div style="font-weight:600; color:var(--color-text-primary);">${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}</div>
           <div style="color:var(--color-text-secondary); font-size:11px; margin-top:4px;">
-            <span style="color:var(--color-primary); font-weight:500;">มีผลจาก ${i.import_date || '-'}</span> · ${(i.description||'').split(',')[0].replace('TR. ','')}
+            <span style="color:var(--color-primary); font-weight:500;">มีผลจาก ${i.import_date || '-'}</span> · ${sizeLabel}
           </div>
         </div>
         <i class="ti ti-trash" style="color:var(--color-danger); cursor:pointer; font-size:18px;" onclick="removeFromCart('${i.serial}')" aria-label="ลบ"></i>
-      </div>
-    `).join('');
+      </div>`
+    }).join('');
   }
 }
 

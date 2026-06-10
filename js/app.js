@@ -56,7 +56,6 @@ function showPg(p) {
   updateHdr();
 }
 
-// 📦 หน้า Stock: มีเส้นแบ่งขนาดอย่างสวยงาม
 function renderStock() {
   const slocs = ['all', '0021', '0022', '8002'];
   const lbl = { all: 'ทั้งหมด', '0021': 'SLoc 0021', '0022': 'SLoc 0022', '8002': 'SLoc 8002' };
@@ -64,7 +63,6 @@ function renderStock() {
   
   const items = RAW.filter(i => (slocF === 'all' || i.sloc === slocF) && !i.is_issued);
   
-  // จัดกลุ่มตามขนาด (Size)
   const groupedItems = {};
   items.forEach(i => {
     const match = i.description.match(/(TR.*?KVA)/i);
@@ -78,14 +76,12 @@ function renderStock() {
      html = `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px;grid-column:1/-1;">ไม่มีรายการในคลัง</div>`;
   } else {
      for (const [size, sizeItems] of Object.entries(groupedItems)) {
-        // สร้างเส้นแบ่งขนาด (Divider)
         html += `
         <div style="grid-column: 1 / -1; margin-top: 16px; margin-bottom: 4px; padding-bottom: 8px; border-bottom: 2px solid var(--color-primary-light); color: var(--color-primary); font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;">
           <span style="display:flex; align-items:center; gap:6px;"><i class="ti ti-bolt" style="font-size:18px;"></i> ${size}</span>
           <span style="background: var(--color-primary-light); color: var(--color-primary); padding: 4px 10px; border-radius: 20px; font-size: 12px;">${sizeItems.length} เครื่อง</span>
         </div>`;
         
-        // วาดการ์ดหม้อแปลงภายใต้ขนาดนั้นๆ
         html += sizeItems.map(i => `
           <div class="item">
             <div class="item-top">
@@ -105,7 +101,6 @@ function renderStock() {
 
 function setSloc(s) { slocF = s; renderStock(); }
 
-// 🕰️ หน้า Log: จัดกลุ่มเป็น "งานๆ ไป" (Job Card)
 function renderLog() {
   const monthInput = document.getElementById('log-month-input');
   const searchInput = document.getElementById('log-search-input');
@@ -145,7 +140,6 @@ function renderLog() {
     return (!searchTerm || matchSearch) && matchSize;
   });
 
-  // สรุปยอดเบิก
   const sizeSummary = {};
   filteredLogs.forEach(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
@@ -164,10 +158,8 @@ function renderLog() {
   }
   document.getElementById('log-summary').innerHTML = summaryHTML;
 
-  // 📦 จัดกลุ่ม Log ให้เป็น "งาน (Job)"
   const jobMap = {};
   filteredLogs.forEach(l => {
-     // ใช้ วัน-เวลา(นาที) + ชื่อผู้เบิก + สถานที่ เป็น Key ของแต่ละงาน
      const date = new Date(l.created_at);
      const timeKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
      const groupKey = `${timeKey}_${l.req_name}_${l.location}`;
@@ -197,7 +189,7 @@ function renderLog() {
   });
 
   const jobGroups = Object.values(jobMap).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-  window.currentJobGroups = jobGroups; // เก็บไว้ใช้ตอนกดแก้ไข
+  window.currentJobGroups = jobGroups; 
 
   const totalPages = Math.ceil(jobGroups.length / logsPerPage) || 1;
   if (currentLogPage > totalPages) currentLogPage = totalPages;
@@ -207,9 +199,7 @@ function renderLog() {
 
   document.getElementById('log-count').textContent = `ประวัติทั้งหมด ${jobGroups.length} งาน (${filteredLogs.length} เครื่อง)`;
   
-  // วาดการ์ด Job 
   document.getElementById('log-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
-    // แก้ไขลิงก์ Google Maps อย่างเป็นทางการ
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
     const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
@@ -230,15 +220,21 @@ function renderLog() {
       <div style="margin-top:14px; background:var(--color-bg-secondary); border-radius:var(--radius-md); padding:12px; border:1px solid var(--color-border);">
         <div style="font-size:12px; font-weight:700; color:var(--color-primary); margin-bottom:8px;">📦 รายการหม้อแปลง (${job.items.length} เครื่อง):</div>
         <div style="display:flex; flex-direction:column; gap:8px;">
-          ${job.items.map(i => `
+          ${job.items.map(i => {
+            // โค้ดที่ดึงขนาดหม้อแปลงแบบสมบูรณ์
+            const match = (i.desc || '').match(/(TR.*?KVA)/i);
+            const sizeLabel = match ? match[1] : (i.desc || '').split(',').slice(0, 2).join(',');
+
+            return `
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:6px;">
               <div>
                 <span style="font-weight:600; color:var(--color-text-primary);">${i.serial}</span> ${i.asset_no ? ' <span style="color:var(--color-text-tertiary);">/ '+i.asset_no+'</span>' : ''} <br> 
-                <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${(i.desc||'').split(',')[0].replace('TR. ', '')}</span>
+                <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
               </div>
               <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card);">มีผลจาก ${i.import_date || '-'}</span>
             </div>
-          `).join('')}
+            `
+          }).join('')}
         </div>
       </div>
     </div>`;
@@ -256,12 +252,11 @@ function changeLogPage(dir) {
   renderLog();
 }
 
-// ✏️ แก้ไขข้อมูลเป็นราย "งาน"
 function editJobModal(jobId) {
   const job = window.currentJobGroups.find(g => g.id === jobId);
   if(!job) return;
   
-  window.currentEditJobIds = job.logIds; // เก็บ ID ทั้งหมดของงานนี้ไว้
+  window.currentEditJobIds = job.logIds; 
 
   document.getElementById('modal-ttl').textContent = `แก้ไขประวัติเบิก (${job.items.length} เครื่อง)`;
   document.getElementById('modal-body').innerHTML = `
@@ -284,7 +279,6 @@ async function saveEditJob() {
   if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
 
   updateHdrStatus('กำลังบันทึก...');
-  // อัปเดตข้อมูลทุก Log ID ที่อยู่ในงานนี้พร้อมกัน
   const { error } = await _supabase.from('logs').update({
     req_name: req, location: loc, gps: gps, note: note
   }).in('id', logIds);
@@ -297,7 +291,6 @@ async function saveEditJob() {
   }
 }
 
-// Settings
 async function importFile(input) {
   const file = input.files[0];
   if (!file) return;
