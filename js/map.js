@@ -1,5 +1,5 @@
 // ==========================================
-// Module: GIS Transformer Map (Safari & LINE Fixed)
+// Module: GIS Transformer Map (With Filters)
 // ==========================================
 
 let leafletMap = null;
@@ -21,11 +21,48 @@ function renderMap() {
       markerLayer.clearLayers();
     }
 
+    // 1. ดึงข้อความค้นหาและขนาดที่ระบุมาจากกล่อง Input ตัวกรอง
+    const searchInput = document.getElementById('map-search-input');
+    const sizeInput = document.getElementById('map-size-input');
+    
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const selectedSize = sizeInput ? sizeInput.value : '';
+
+    // สกัดขนาดหม้อแปลงทั้งหมดที่มีประวัติปักหมุดเพื่อนำไปเติมลง dropdown ตัวเลือก
+    const logsWithGps = logs.filter(l => l.gps);
+    const allSizes = [...new Set(logsWithGps.map(l => {
+      const trInfo = RAW.find(r => r.serial === l.serial) || {};
+      const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
+      return match ? match[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
+    }))].filter(Boolean);
+
+    if (sizeInput) {
+      sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+      if (allSizes.includes(selectedSize)) { sizeInput.value = selectedSize; }
+    }
+
     const bounds = []; 
 
-    logs.forEach(l => {
-      if (!l.gps) return;
-      
+    // 2. คัดกรองข้อมูลประวัติเบิกตามเงื่อนไขค้นหาแบบสด ๆ 
+    const filteredLogs = logsWithGps.filter(l => {
+      const trInfo = RAW.find(r => r.serial === l.serial) || {};
+      const matchSizeStr = (trInfo.description || '').match(/(TR.*?KVA)/i);
+      const size = matchSizeStr ? matchSizeStr[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
+
+      const matchSearch = l.serial.toLowerCase().includes(searchTerm) || 
+                          (trInfo.asset_no || '').toLowerCase().includes(searchTerm) ||
+                          l.req_name.toLowerCase().includes(searchTerm) || 
+                          (l.location || '').toLowerCase().includes(searchTerm) ||
+                          (l.team || '').toLowerCase().includes(searchTerm) ||
+                          (l.wbs || '').toLowerCase().includes(searchTerm);
+                          
+      const matchSize = !selectedSize || size === selectedSize;
+
+      return matchSearch && matchSize;
+    });
+
+    // 3. วาดหมุดเฉพาะรายการที่ผ่านการคัดกรองแล้ว
+    filteredLogs.forEach(l => {
       const parts = l.gps.split(',');
       if (parts.length !== 2) return;
       
@@ -37,11 +74,8 @@ function renderMap() {
       const trInfo = RAW.find(r => r.serial === l.serial) || {};
       const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
       const sizeLabel = match ? match[1] : (trInfo.description || '').split(',')[0].replace('TR. ', '');
-
-      // ลบช่องว่างทั้งหมดใน GPS ออกเพื่อความปลอดภัยของสตริง URL
       const cleanGPS = l.gps.replace(/\s+/g, '');
 
-      // ✨ ใช้ Official Google Maps Search API: รองรับ Safari, iOS, Android และ LINE 100%
       const popupHTML = `
         <div style="font-family: 'Sarabun', sans-serif; font-size: 12px; line-height: 1.6; min-width:180px;">
           <div style="font-weight: 700; color: var(--color-primary); font-size: 14px; margin-bottom: 6px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">⚡ ${l.serial}</div>
@@ -68,6 +102,7 @@ function renderMap() {
 
     leafletMap.invalidateSize();
 
+    // 4. สั่ง Auto-zoom รีโฟกัสเฉพาะหมุดที่ปรากฏอยู่บนหน้าจอ
     if (bounds.length > 0) {
       leafletMap.fitBounds(bounds, { padding: [30, 30] });
     }
