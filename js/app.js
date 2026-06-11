@@ -49,12 +49,16 @@ function showPg(p) {
   document.querySelectorAll('.nav-tab').forEach(x => x.classList.remove('on'));
   
   document.getElementById('pg-' + p).classList.add('on');
-  const nm = ['dash', 'issue', 'pending', 'log'];
+  
+  // จัดเรียง Index แท็บเมนูใหม่: dash, issue, pending, map, log
+  const nm = ['dash', 'issue', 'pending', 'map', 'log'];
   const idx = nm.indexOf(p);
   if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('on');
   
   currentPg = p;
-  const fn = { dash: renderDash, issue: renderIssue, pending: renderPending, log: renderLog, settings: () => {} };
+  
+  // แมตช์หน้ากับฟังก์ชันการวาด UI 
+  const fn = { dash: renderDash, issue: renderIssue, pending: renderPending, map: renderMap, log: renderLog, settings: () => {} };
   if (fn[p]) fn[p]();
   updateHdr();
 }
@@ -128,7 +132,6 @@ function renderPending() {
   document.getElementById('pend-count').textContent = `รอตัดจ่ายทั้งหมด ${jobGroups.length} งาน (${filteredLogs.length} เครื่อง)`;
   
   document.getElementById('pend-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
-    // 🚀 แก้ไขลิงก์ GPS ให้ถูกต้องที่นี่
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
     const gpsLink = job.gps ? `<a href="https://maps.google.com/maps?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
@@ -290,7 +293,6 @@ function renderLog() {
   document.getElementById('log-count').textContent = `ประวัติทั้งหมด ${jobGroups.length} งาน (${filteredLogs.length} เครื่อง)`;
   
   document.getElementById('log-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
-    // 🚀 แก้ไขลิงก์ GPS ให้ถูกต้องที่นี่
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
     const gpsLink = job.gps ? `<a href="https://maps.google.com/maps?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
