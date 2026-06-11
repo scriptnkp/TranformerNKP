@@ -1,5 +1,5 @@
 // ==========================================
-// Module: GIS Transformer Map (Fix Nav Link)
+// Module: GIS Transformer Map (Standard Nav URL Fixed)
 // ==========================================
 
 let leafletMap = null;
@@ -38,10 +38,10 @@ function renderMap() {
       const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
       const sizeLabel = match ? match[1] : (trInfo.description || '').split(',')[0].replace('TR. ', '');
 
-      // ลบช่องว่างทั้งหมดใน GPS ออกเพื่อส่งให้ Google Maps แบบไม่มีปัญหาสตริงรวน
+      // ลบช่องว่างทั้งหมดใน GPS ออกเพื่อความปลอดภัยของสตริง URL
       const cleanGPS = l.gps.replace(/\s+/g, '');
 
-      // ดักแก้ไข: เปลี่ยนรูปแบบการใส่ตัวแปรให้เป็น ${cleanGPS} แบบมาตรฐาน ลบเลข 13 และ $ ที่ทำลิงก์พังออก
+      // ✨ ปรับปรุงจุดนี้: ใช้โครงสร้าง Google Maps URL แบบสากลระดับสากล เพื่อป้องกันปัญหานำทางไม่ได้บนบางอุปกรณ์
       const popupHTML = `
         <div style="font-family: 'Sarabun', sans-serif; font-size: 12px; line-height: 1.6; min-width:180px;">
           <div style="font-weight: 700; color: var(--color-primary); font-size: 14px; margin-bottom: 6px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">⚡ ${l.serial}</div>
@@ -53,7 +53,7 @@ function renderMap() {
           <div style="margin-top:4px;"><b>สถานะ:</b> ${l.write_off_no ? `<span style="color:var(--color-success);font-weight:600;">ตัดจ่ายแล้ว</span>` : `<span style="color:var(--color-warning);font-weight:600;">รอตัดจ่าย</span>`}</div>
           
           <div style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 8px; text-align:right;">
-            <a href="http://googleusercontent.com/maps.google.com/?q=${cleanGPS}" target="_blank" style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 12px; text-decoration: none; font-weight: 500; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+            <a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="background: var(--color-primary); color: white; padding: 4px 10px; border-radius: 12px; text-decoration: none; font-weight: 500; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
               <i class="ti ti-map-pin" style="font-size:13px;"></i> นำทางภารกิจ
             </a>
           </div>
