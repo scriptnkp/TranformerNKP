@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -28,10 +32,10 @@
     <div class="nav-tab on" onclick="showPg('dash')"><i class="ti ti-chart-bar" aria-hidden="true"></i>สรุป</div>
     <div class="nav-tab" onclick="showPg('issue')"><i class="ti ti-arrow-bar-right" aria-hidden="true"></i>เบิก</div>
     <div class="nav-tab" onclick="showPg('pending')"><i class="ti ti-file-export" aria-hidden="true"></i>รอตัดจ่าย</div>
+    <div class="nav-tab" onclick="showPg('map')"><i class="ti ti-map-2" aria-hidden="true"></i>แผนที่</div>
     <div class="nav-tab" onclick="showPg('log')"><i class="ti ti-history" aria-hidden="true"></i>ประวัติ</div>
   </div>
 
-  <!-- Page 1: Dashboard -->
   <div class="pg on" id="pg-dash">
     <div class="sec">
       <div class="kpi-grid" id="kpi"></div>
@@ -42,7 +46,6 @@
     </div>
   </div>
 
-  <!-- Page 2: Issue Form -->
   <div class="pg" id="pg-issue">
     <div class="sec">
       <div class="form-card">
@@ -92,7 +95,6 @@
     </div>
   </div>
 
-  <!-- Page 3: Pending Write-off -->
   <div class="pg" id="pg-pending">
     <div class="sec">
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -113,7 +115,12 @@
     </div>
   </div>
 
-  <!-- Page 4: History Log -->
+  <div class="pg" id="pg-map">
+    <div class="sec" style="height: calc(100vh - 170px); min-height: 480px; padding: 0; position: relative;">
+      <div id="map" style="width: 100%; height: 100%; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); z-index: 1;"></div>
+    </div>
+  </div>
+
   <div class="pg" id="pg-log">
     <div class="sec">
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -137,7 +144,6 @@
     </div>
   </div>
 
-  <!-- Page 5: Settings -->
   <div class="pg" id="pg-settings">
     <div class="sett-sec">
       <div class="sett-ttl"><i class="ti ti-file-upload" aria-hidden="true"></i>นำเข้าข้อมูล IQ09</div>
@@ -158,7 +164,6 @@
 
 </div>
 
-<!-- Modal Overlay -->
 <div class="overlay" id="modal-ov" onclick="closeModal(event)">
   <div class="modal" id="modal-box">
     <div class="modal-hdr">
@@ -174,6 +179,6 @@
 
 <script src="js/dashboard.js"></script>
 <script src="js/form.js"></script>
-<script src="js/app.js"></script>
+<script src="js/map.js"></script> <script src="js/app.js"></script>
 </body>
 </html>
