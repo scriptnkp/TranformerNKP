@@ -116,7 +116,14 @@
   </div>
 
   <div class="pg" id="pg-map">
-    <div class="sec" style="padding: 0; position: relative; display: flex; flex-direction: column; height: 75vh; min-height: 500px;">
+    <div class="sec" style="padding: 0; position: relative; display: flex; flex-direction: column; height: 75vh; min-height: 520px; gap: 8px;">
+      <div style="display:flex; gap:8px; width: 100%; flex-wrap:wrap; padding: 12px 12px 4px 12px; background: var(--color-bg-card); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+        <select id="map-size-input" style="flex:1; min-width:120px; padding:10px 12px;" onchange="renderMap()">
+          <option value="">ทุกขนาด</option>
+        </select>
+        <input type="text" id="map-search-input" placeholder="ค้นหาพิกัด TR, ผู้เบิก, ทีมงาน..." style="flex:2; min-width:180px;" onkeyup="renderMap()" />
+      </div>
+      
       <div id="map" style="flex: 1; width: 100%; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); z-index: 1;"></div>
     </div>
   </div>
