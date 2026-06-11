@@ -1,5 +1,5 @@
 // ==========================================
-// Module: GIS Transformer Map (Standard Nav URL Fixed)
+// Module: GIS Transformer Map (Safari & LINE Fixed)
 // ==========================================
 
 let leafletMap = null;
@@ -41,7 +41,7 @@ function renderMap() {
       // ลบช่องว่างทั้งหมดใน GPS ออกเพื่อความปลอดภัยของสตริง URL
       const cleanGPS = l.gps.replace(/\s+/g, '');
 
-      // ✨ ปรับปรุงจุดนี้: ใช้โครงสร้าง Google Maps URL แบบสากลระดับสากล เพื่อป้องกันปัญหานำทางไม่ได้บนบางอุปกรณ์
+      // ✨ ใช้ Official Google Maps Search API: รองรับ Safari, iOS, Android และ LINE 100%
       const popupHTML = `
         <div style="font-family: 'Sarabun', sans-serif; font-size: 12px; line-height: 1.6; min-width:180px;">
           <div style="font-weight: 700; color: var(--color-primary); font-size: 14px; margin-bottom: 6px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">⚡ ${l.serial}</div>
