@@ -128,8 +128,9 @@ function renderPending() {
   document.getElementById('pend-count').textContent = `รอตัดจ่ายทั้งหมด ${jobGroups.length} งาน (${filteredLogs.length} เครื่อง)`;
   
   document.getElementById('pend-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
+    // 🚀 แก้ไขลิงก์ GPS ให้ถูกต้องที่นี่
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
-    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=$${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = job.gps ? `<a href="https://maps.google.com/maps?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1; border-left: 4px solid var(--color-warning);">
@@ -289,8 +290,9 @@ function renderLog() {
   document.getElementById('log-count').textContent = `ประวัติทั้งหมด ${jobGroups.length} งาน (${filteredLogs.length} เครื่อง)`;
   
   document.getElementById('log-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
+    // 🚀 แก้ไขลิงก์ GPS ให้ถูกต้องที่นี่
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
-    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=$${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = job.gps ? `<a href="https://maps.google.com/maps?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1;">

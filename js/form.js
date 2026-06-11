@@ -1,8 +1,9 @@
 // ==========================================
-// Module: Issue Form (Cart & Multiple Image Upload)
+// Module: Issue Form (Cart & Image Upload System)
 // ==========================================
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
+
 const TELEGRAM_BOT_TOKEN = '8500752472:AAEcOqBZDYze4NMctxi1CBAWY7MblrqvUDU';
 const TELEGRAM_CHAT_ID = '-5006086656';
 
@@ -70,9 +71,11 @@ async function compressImage(file) {
 async function addToCart() {
   const sel = document.getElementById('s-serial');
   const serial = sel.value;
+  
   if(!serial) { showToast('กรุณาเลือก TR/SN ก่อนกดเพิ่ม'); return; }
   
   const itemInfo = avail().find(i => i.serial === serial);
+  
   if(itemInfo) {
     issueCart.push(itemInfo);
     showToast(`เพิ่ม ${serial} ลงรายการแล้ว`);
@@ -115,12 +118,13 @@ function renderCartUI() {
   }
 }
 
+// 🚀 แก้ไขลิงก์ GPS สำหรับ Telegram ให้ถูกต้องที่นี่
 async function sendTelegramAlert(req, team, loc, gps, wbs, cart) {
   let msg = `🚨 <b>แจ้งเตือนเบิกหม้อแปลงใหม่</b>\n\n`;
   msg += `👤 <b>ผู้เบิก:</b> ${req}\n`;
   msg += `👥 <b>ทีมงาน:</b> ${team || '-'}\n`;
   msg += `📍 <b>สถานที่:</b> ${loc || '-'}\n`;
-  msg += `🗺️ <b>GPS:</b> ${gps ? `<a href="https://maps.google.com/?q=${gps.replace(/\s/g,'')}">${gps}</a>` : '-'}\n`;
+  msg += `🗺️ <b>GPS:</b> ${gps ? `<a href="https://maps.google.com/maps?q=${gps.replace(/\s/g,'')}">${gps}</a>` : '-'}\n`;
   msg += `💼 <b>WBS:</b> ${wbs || '-'}\n\n`;
   msg += `📦 <b>รายการเบิก (${cart.length} เครื่อง):</b>\n`;
   
@@ -136,7 +140,9 @@ async function sendTelegramAlert(req, team, loc, gps, wbs, cart) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'HTML', disable_web_page_preview: true })
       });
-  } catch(e) { console.error('Telegram error:', e); }
+  } catch(e) {
+      console.error('Telegram error:', e);
+  }
 }
 
 async function doIssueCart() {
@@ -160,14 +166,12 @@ async function doIssueCart() {
     let issueUrls = [];
     let installUrls = [];
 
-    // ดึงข้อมูลขนาดหม้อแปลงและวันที่อ้างอิงจากเครื่องแรกในตะกร้า
     const firstItem = issueCart[0];
     const match = (firstItem.description || '').match(/(TR.*?KVA)/i);
     const sizeFolderName = match ? match[1].trim().replace(/[\/\\?%*:|"<>]/g, '-') : 'ไม่ระบุขนาด';
     const d = new Date();
     const dStr = String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + (d.getFullYear());
 
-    // 1. ลูปอัปโหลดรูป "เบิก"
     for (let i = 0; i < issueFiles.length; i++) {
       updateHdrStatus(`กำลังอัปโหลดรูปเบิก (${i+1}/${issueFiles.length})...`);
       let b64 = await compressImage(issueFiles[i]);
@@ -185,7 +189,6 @@ async function doIssueCart() {
       }
     }
 
-    // 2. ลูปอัปโหลดรูป "ติดตั้ง"
     for (let i = 0; i < installFiles.length; i++) {
       updateHdrStatus(`กำลังอัปโหลดรูปติดตั้ง (${i+1}/${installFiles.length})...`);
       let b64 = await compressImage(installFiles[i]);
@@ -205,11 +208,9 @@ async function doIssueCart() {
 
     updateHdrStatus('กำลังบันทึกข้อมูลเข้าระบบฐานข้อมูล...');
 
-    // นำ Array ของ URL มาต่อกันด้วยลูกน้ำ (,) เพื่อเซฟลงฐานข้อมูลช่องเดียว
     const finalIssueUrlStr = issueUrls.join(',');
     const finalInstallUrlStr = installUrls.join(',');
 
-    // 3. เตรียมข้อมูล Payload
     const logsPayload = issueCart.map(item => ({
       serial: item.serial,
       req_name: req,
@@ -217,8 +218,8 @@ async function doIssueCart() {
       location: loc,
       gps: gps,
       wbs: wbs,
-      issue_photo_url: finalIssueUrlStr,     // บันทึกรูปรวมกัน
-      install_photo_url: finalInstallUrlStr  // บันทึกรูปรวมกัน
+      issue_photo_url: finalIssueUrlStr,     
+      install_photo_url: finalInstallUrlStr  
     }));
 
     const { error: logErr } = await _supabase.from('logs').insert(logsPayload);
