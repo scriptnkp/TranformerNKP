@@ -1,5 +1,5 @@
 // ==========================================
-// Module: Dashboard
+// Module: Dashboard (Dynamic SLoc)
 // ==========================================
 
 function renderDash() {
@@ -10,15 +10,17 @@ function renderDash() {
   const iss = RAW.filter(r => r.is_issued && !r.is_written_off).length; 
   const av = tot - iss; 
   
-  // เพิ่ม onclick="showPg('pending')" ให้กล่องรอตัดจ่าย
   document.getElementById('kpi').innerHTML = `
     <div class="kpi"><div class="kpi-lbl">สต็อกทั้งหมด</div><div class="kpi-val">${tot}</div><div class="kpi-sub">รายการ</div></div>
     <div class="kpi"><div class="kpi-lbl">คงเหลือ</div><div class="kpi-val" style="color:var(--color-success)">${av}</div><div class="kpi-sub">พร้อมเบิก</div></div>
     <div class="kpi" onclick="showPg('pending')" style="cursor:pointer; border:1px solid #fef08a; background:var(--color-bg-card); transition:transform 0.2s;"><div class="kpi-lbl">รอตัดจ่าย</div><div class="kpi-val" style="color:var(--color-warning)">${iss}</div><div class="kpi-sub" style="color:var(--color-warning); font-weight:500;">แตะเพื่อตัดจ่าย <i class="ti ti-arrow-right"></i></div></div>
     <div class="kpi"><div class="kpi-lbl">ตัดจ่ายแล้ว</div><div class="kpi-val" style="color:var(--color-danger)">${writtenOff}</div><div class="kpi-sub">รายการ</div></div>`;
 
-  const slocs = ['0021', '0022', '8002'];
-  const mats = [...new Set(RAW.map(i => i.mat))];
+  // ✨ แก้ไขจุดนี้: ดึง SLoc ทุกตัวที่มีอยู่ในระบบมาสร้างเป็น Array อัตโนมัติและเรียงลำดับจากน้อยไปมาก
+  // แต่เราจะกรองเฉพาะรายการที่ "ยังไม่ถูกตัดจ่าย" (is_written_off = false) มาโชว์ในตารางแดชบอร์ด
+  const availableItemsForTable = RAW.filter(i => !i.is_written_off);
+  const slocs = [...new Set(availableItemsForTable.map(i => i.sloc).filter(Boolean))].sort();
+  const mats = [...new Set(availableItemsForTable.map(i => i.mat))];
   
   let thead = `<thead><tr><th style="text-align:left">วัสดุ / คำอธิบาย</th>`;
   slocs.forEach(s => { thead += `<th>${s}</th>`; });
@@ -28,7 +30,7 @@ function renderDash() {
   let colTot = {}; slocs.forEach(s => { colTot[s] = 0; }); let grandTot = 0;
   
   mats.forEach(m => {
-    const mItems = RAW.filter(i => i.mat === m && !i.is_written_off);
+    const mItems = availableItemsForTable.filter(i => i.mat === m);
     if(mItems.length === 0) return;
     const shortDesc = mItems[0].description.replace('TR. ', '').replace('TR.,', '').split(',').slice(0, 2).join(',');
     
