@@ -1,5 +1,5 @@
 // ==========================================
-// Module: Dashboard (Dynamic SLoc & Warranty Setup)
+// Module: Dashboard (Dynamic SLoc & Warranty Setup & Sorted TR)
 // ==========================================
 
 function renderDash() {
@@ -56,13 +56,15 @@ function renderDash() {
 }
 
 function showSlocModal(mat, title, sloc) {
-  const items = RAW.filter(i => i.mat === mat && !i.is_issued && !i.is_written_off && (sloc === 'all' || i.sloc === sloc));
+  // ✨ เรียงลำดับ TR จากน้อยไปมากด้วย localeCompare
+  const items = RAW.filter(i => i.mat === mat && !i.is_issued && !i.is_written_off && (sloc === 'all' || i.sloc === sloc))
+                   .sort((a, b) => (a.serial || '').localeCompare(b.serial || ''));
+                   
   const slocLabel = sloc === 'all' ? 'ทุก SLoc' : `SLoc ${sloc}`;
   document.getElementById('modal-ttl').textContent = `${title.trim()} (${slocLabel} - ${items.length} รายการ)`;
   
   document.getElementById('modal-body').innerHTML = items.length ? items.map(i => {
     
-    // คำนวณวันหมดประกันบวกไป 5 ปีจากวันที่นำเข้า
     let expText = '';
     if (i.import_date) {
        const parts = i.import_date.split('.');
@@ -72,7 +74,6 @@ function showSlocModal(mat, title, sloc) {
        }
     }
 
-    // สร้างปุ่มดูรูปใบรับประกัน หรือปุ่มกดอัปโหลดตรงวงกล่องแดงที่คุณต้องการ
     let wHtml = '';
     if (i.warranty_photo_url) {
         const urls = i.warranty_photo_url.split(',').filter(Boolean);
@@ -148,7 +149,6 @@ async function handleMasterWarrantyUpload(e) {
         const gasUrl = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
 
         for (let i = 0; i < files.length; i++) {
-            // เรียกฟังก์ชันเซฟการ์ดล็อกขนาดจากไฟล์ app.js
             let b64 = await compressImageForEdit(files[i]); 
             const response = await fetch(gasUrl, {
                 method: 'POST',
