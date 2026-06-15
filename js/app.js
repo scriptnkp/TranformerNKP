@@ -49,15 +49,11 @@ function showPg(p) {
   document.querySelectorAll('.nav-tab').forEach(x => x.classList.remove('on'));
   
   document.getElementById('pg-' + p).classList.add('on');
-  
-  // จัดเรียง Index แท็บเมนูใหม่: dash, issue, pending, map, log
   const nm = ['dash', 'issue', 'pending', 'map', 'log'];
   const idx = nm.indexOf(p);
   if (idx >= 0) document.querySelectorAll('.nav-tab')[idx].classList.add('on');
   
   currentPg = p;
-  
-  // แมตช์หน้ากับฟังก์ชันการวาด UI 
   const fn = { dash: renderDash, issue: renderIssue, pending: renderPending, map: renderMap, log: renderLog, settings: () => {} };
   if (fn[p]) fn[p]();
   updateHdr();
@@ -67,8 +63,8 @@ function renderPending() {
   const searchInput = document.getElementById('pend-search-input');
   const sizeInput = document.getElementById('pend-size-input');
 
-  const searchTerm = searchInput.value.toLowerCase();
-  const selectedSize = sizeInput.value;
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  const selectedSize = sizeInput ? sizeInput.value : '';
 
   const pendingLogsAll = logs.filter(l => !l.write_off_no);
 
@@ -78,8 +74,10 @@ function renderPending() {
     return match ? match[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
   }))].filter(Boolean);
 
-  sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
-  if (allSizes.includes(selectedSize)) { sizeInput.value = selectedSize; }
+  if(sizeInput) {
+    sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+    if (allSizes.includes(selectedSize)) { sizeInput.value = selectedSize; }
+  }
 
   const filteredLogs = pendingLogsAll.filter(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
@@ -93,9 +91,9 @@ function renderPending() {
                         (l.team || '').toLowerCase().includes(searchTerm) ||
                         (l.wbs || '').toLowerCase().includes(searchTerm);
                         
-    const matchSize = !sizeInput.value || size === sizeInput.value;
+    const matchSize = !selectedSize || size === selectedSize;
 
-    return (!searchTerm || matchSearch) && matchSize;
+    return matchSearch && matchSize;
   });
 
   const jobMap = {};
@@ -133,7 +131,7 @@ function renderPending() {
   
   document.getElementById('pend-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
-    const gpsLink = job.gps ? `<a href="https://maps.google.com/maps?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1; border-left: 4px solid var(--color-warning);">
@@ -169,6 +167,16 @@ function renderPending() {
             let img1Html = issueUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe;"><i class="ti ti-photo" style="font-size:12px;"></i> เบิก ${idx+1}</a>`).join(' ');
             let img2Html = installUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0;"><i class="ti ti-camera" style="font-size:12px;"></i> ติดตั้ง ${idx+1}</a>`).join(' ');
 
+            // ✨ เพิ่มระบบคำนวณวันหมดประกัน (5 ปี) สำหรับหน้ารอตัดจ่าย
+            let expText = '';
+            if (i.import_date && i.import_date !== '-') {
+               const parts = i.import_date.split('.');
+               if (parts.length === 3) {
+                  const expYear = parseInt(parts[2], 10) + 5;
+                  expText = `<div style="color:var(--color-danger); font-size:10px; font-weight:600; margin-top:4px;"><i class="ti ti-shield-check" style="font-size:11px;"></i> หมดประกัน: ${parts[0]}.${parts[1]}.${expYear}</div>`;
+               }
+            }
+
             return `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:4px;">
               <div>
@@ -176,7 +184,10 @@ function renderPending() {
                 <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
                 ${(img1Html || img2Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html}</div>` : ''}
               </div>
-              <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
+              <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
+                ${expText}
+              </div>
             </div>
             `
           }).join('')}
@@ -185,11 +196,14 @@ function renderPending() {
     </div>`;
   }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px;grid-column:1/-1;">🎉 ยอดเยี่ยม! ไม่มีงานรอตัดจ่ายเลย</div>`;
 
-  document.getElementById('pend-page-info').textContent = `หน้า ${currentPendPage} / ${totalPages}`;
-  document.getElementById('btn-prev-pend').disabled = currentPendPage === 1;
-  document.getElementById('btn-next-pend').disabled = currentPendPage === totalPages;
-  document.getElementById('btn-prev-pend').style.opacity = currentPendPage === 1 ? '0.5' : '1';
-  document.getElementById('btn-next-pend').style.opacity = currentPendPage === totalPages ? '0.5' : '1';
+  const infoEl = document.getElementById('pend-page-info');
+  if(infoEl) {
+    infoEl.textContent = `หน้า ${currentPendPage} / ${totalPages}`;
+    document.getElementById('btn-prev-pend').disabled = currentPendPage === 1;
+    document.getElementById('btn-next-pend').disabled = currentPendPage === totalPages;
+    document.getElementById('btn-prev-pend').style.opacity = currentPendPage === 1 ? '0.5' : '1';
+    document.getElementById('btn-next-pend').style.opacity = currentPendPage === totalPages ? '0.5' : '1';
+  }
 }
 
 function changePendPage(dir) {
@@ -205,8 +219,8 @@ function renderLog() {
   if (!monthInput.value) monthInput.value = new Date().toISOString().slice(0, 7);
   
   const currentMonth = monthInput.value;
-  const searchTerm = searchInput.value.toLowerCase();
-  const selectedSize = sizeInput.value;
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  const selectedSize = sizeInput ? sizeInput.value : '';
 
   const logsInMonth = logs.filter(l => {
     const logDate = new Date(l.created_at);
@@ -220,8 +234,10 @@ function renderLog() {
     return match ? match[1].trim() : ((trInfo.description || '').split(',')[0].trim() || 'ไม่ระบุขนาด');
   }))].filter(Boolean);
 
-  sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
-  if (allSizes.includes(selectedSize)) { sizeInput.value = selectedSize; }
+  if(sizeInput) {
+    sizeInput.innerHTML = '<option value="">ทุกขนาด</option>' + allSizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+    if (allSizes.includes(selectedSize)) { sizeInput.value = selectedSize; }
+  }
 
   const filteredLogs = logsInMonth.filter(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
@@ -236,9 +252,9 @@ function renderLog() {
                         (l.wbs || '').toLowerCase().includes(searchTerm) ||
                         (l.write_off_no || '').toLowerCase().includes(searchTerm);
                         
-    const matchSize = !sizeInput.value || size === sizeInput.value;
+    const matchSize = !selectedSize || size === selectedSize;
 
-    return (!searchTerm || matchSearch) && matchSize;
+    return matchSearch && matchSize;
   });
 
   const sizeSummary = {};
@@ -294,7 +310,7 @@ function renderLog() {
   
   document.getElementById('log-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
-    const gpsLink = job.gps ? `<a href="https://maps.google.com/maps?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1;">
@@ -331,6 +347,16 @@ function renderLog() {
             let img1Html = issueUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe;"><i class="ti ti-photo" style="font-size:12px;"></i> เบิก ${idx+1}</a>`).join(' ');
             let img2Html = installUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0;"><i class="ti ti-camera" style="font-size:12px;"></i> ติดตั้ง ${idx+1}</a>`).join(' ');
 
+            // ✨ เพิ่มระบบคำนวณวันหมดประกัน (5 ปี) สำหรับหน้าประวัติ
+            let expText = '';
+            if (i.import_date && i.import_date !== '-') {
+               const parts = i.import_date.split('.');
+               if (parts.length === 3) {
+                  const expYear = parseInt(parts[2], 10) + 5;
+                  expText = `<div style="color:var(--color-danger); font-size:10px; font-weight:600; margin-top:4px;"><i class="ti ti-shield-check" style="font-size:11px;"></i> หมดประกัน: ${parts[0]}.${parts[1]}.${expYear}</div>`;
+               }
+            }
+
             return `
             <div style="display:flex; justify-content:space-between; align-items:flex-start; font-size:12px; border-bottom:1px solid #e2e8f0; padding-bottom:8px; margin-bottom:4px;">
               <div>
@@ -338,7 +364,10 @@ function renderLog() {
                 <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
                 ${(img1Html || img2Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html}</div>` : ''}
               </div>
-              <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
+              <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
+                ${expText}
+              </div>
             </div>
             `
           }).join('')}
@@ -347,11 +376,14 @@ function renderLog() {
     </div>`;
   }).join('') : `<div style="text-align:center;padding:32px;color:var(--color-text-tertiary);font-size:13px;grid-column:1/-1;">ไม่พบข้อมูลที่ค้นหา</div>`;
 
-  document.getElementById('log-page-info').textContent = `หน้า ${currentLogPage} / ${totalPages}`;
-  document.getElementById('btn-prev-page').disabled = currentLogPage === 1;
-  document.getElementById('btn-next-page').disabled = currentLogPage === totalPages;
-  document.getElementById('btn-prev-page').style.opacity = currentLogPage === 1 ? '0.5' : '1';
-  document.getElementById('btn-next-page').style.opacity = currentLogPage === totalPages ? '0.5' : '1';
+  const infoEl = document.getElementById('log-page-info');
+  if(infoEl) {
+    infoEl.textContent = `หน้า ${currentLogPage} / ${totalPages}`;
+    document.getElementById('btn-prev-page').disabled = currentLogPage === 1;
+    document.getElementById('btn-next-page').disabled = currentLogPage === totalPages;
+    document.getElementById('btn-prev-page').style.opacity = currentLogPage === 1 ? '0.5' : '1';
+    document.getElementById('btn-next-page').style.opacity = currentLogPage === totalPages ? '0.5' : '1';
+  }
 }
 
 function changeLogPage(dir) {
