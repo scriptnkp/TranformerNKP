@@ -1,5 +1,5 @@
 // ==========================================
-// Module: Dashboard (Dynamic SLoc & Warranty Calculation)
+// Module: Dashboard (Dynamic SLoc & Warranty Setup)
 // ==========================================
 
 function renderDash() {
@@ -62,14 +62,24 @@ function showSlocModal(mat, title, sloc) {
   
   document.getElementById('modal-body').innerHTML = items.length ? items.map(i => {
     
-    // ✨ ระบบคำนวณวันหมดประกัน 5 ปี
+    // คำนวณวันหมดประกันบวกไป 5 ปีจากวันที่นำเข้า
     let expText = '';
     if (i.import_date) {
        const parts = i.import_date.split('.');
        if (parts.length === 3) {
-          const expYear = parseInt(parts[2], 10) + 5; // บวกเพิ่ม 5 ปีจากปีเดิม
+          const expYear = parseInt(parts[2], 10) + 5; 
           expText = `<span style="color:var(--color-danger); margin-left:6px; font-weight:600;"><i class="ti ti-shield-check" style="font-size:12px;"></i> หมดประกัน: ${parts[0]}.${parts[1]}.${expYear}</span>`;
        }
+    }
+
+    // สร้างปุ่มดูรูปใบรับประกัน หรือปุ่มกดอัปโหลดตรงวงกล่องแดงที่คุณต้องการ
+    let wHtml = '';
+    if (i.warranty_photo_url) {
+        const urls = i.warranty_photo_url.split(',').filter(Boolean);
+        wHtml = urls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:#d97706; background:#fef08a; padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #fde047; margin-right:6px;"><i class="ti ti-certificate" style="font-size:12px;"></i> ใบรับประกัน ${idx+1}</a>`).join('');
+        wHtml += `<span onclick="triggerWarrantyUpload('${i.serial}')" style="font-size:10px; color:var(--color-primary); cursor:pointer; text-decoration:underline;">+ แนบเพิ่ม</span>`;
+    } else {
+        wHtml = `<span onclick="triggerWarrantyUpload('${i.serial}')" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); border:1px solid #bfdbfe; padding:3px 8px; border-radius:12px; cursor:pointer;"><i class="ti ti-upload"></i> แนบใบรับประกัน</span>`;
     }
 
     return `
@@ -79,9 +89,10 @@ function showSlocModal(mat, title, sloc) {
           ${i.serial} ${i.asset_no ? ' / ' + i.asset_no : ''}
         </div>
         <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">${i.mfr || 'ไม่ระบุผู้ผลิต'}</div>
-        <div style="font-size:11px;color:var(--color-primary);margin-top:2px;font-weight:500;display:flex;align-items:center;flex-wrap:wrap;">
+        <div style="font-size:11px;color:var(--color-primary);margin-top:4px;font-weight:500;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
           <span><i class="ti ti-calendar"></i> มีผลจาก ${i.import_date || '-'}</span>
           ${expText}
+          <div style="width:100%; margin-top:6px; display:flex; align-items:center; gap:4px;">${wHtml}</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
@@ -96,4 +107,80 @@ function showSlocModal(mat, title, sloc) {
 function closeModal(e) {
   if (!e || e.target === document.getElementById('modal-ov'))
     document.getElementById('modal-ov').classList.remove('on');
+}
+
+// ----------------------------------------------------
+// ระบบยิงอัปโหลดใบรับประกันตรงตั้งแต่รับเข้าคลังเข้าโฟลเดอร์หลัก
+// ----------------------------------------------------
+function triggerWarrantyUpload(serial) {
+    window.currentUploadSerial = serial;
+    let fileInput = document.getElementById('master-warranty-upload');
+    if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'master-warranty-upload';
+        fileInput.accept = 'image/*';
+        fileInput.multiple = true;
+        fileInput.style.display = 'none';
+        fileInput.onchange = handleMasterWarrantyUpload;
+        document.body.appendChild(fileInput);
+    }
+    fileInput.click();
+}
+
+async function handleMasterWarrantyUpload(e) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const serial = window.currentUploadSerial;
+    if (!serial) return;
+
+    showToast('กำลังอัปโหลดใบรับประกันไม่เกิน 10MB...');
+    updateHdrStatus('กำลังประมวลผลบีบอัดภาพและอัปโหลดรูปภาพใบรับประกัน...');
+
+    try {
+        const trInfo = RAW.find(r => r.serial === serial);
+        const match = (trInfo.description || '').match(/(TR.*?KVA)/i);
+        const sizeFolderName = match ? match[1].trim().replace(/[\/\\?%*:|"<>]/g, '-') : 'ไม่ระบุขนาด';
+        const d = new Date();
+        const dStr = String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + (d.getFullYear());
+
+        let newWarrantyUrls = [];
+        const gasUrl = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
+
+        for (let i = 0; i < files.length; i++) {
+            // เรียกฟังก์ชันเซฟการ์ดล็อกขนาดจากไฟล์ app.js
+            let b64 = await compressImageForEdit(files[i]); 
+            const response = await fetch(gasUrl, {
+                method: 'POST',
+                body: JSON.stringify({
+                    size: sizeFolderName,
+                    warrantyFileName: `03_${serial}_${dStr}_warranty_${i+1}.jpg`,
+                    warrantyPhotoBase64: b64
+                })
+            });
+            const resData = await response.json();
+            if (resData.status === 'success') {
+                resData.data.forEach(d => { if(d.type === 'warranty') newWarrantyUrls.push(d.url); });
+            }
+        }
+
+        if (newWarrantyUrls.length > 0) {
+            const existingWUrls = trInfo.warranty_photo_url ? trInfo.warranty_photo_url.split(',').filter(Boolean) : [];
+            const finalWUrls = [...existingWUrls, ...newWarrantyUrls].join(',');
+            
+            const { error } = await _supabase.from('transformers').update({ warranty_photo_url: finalWUrls }).eq('serial', serial);
+            if (error) throw error;
+
+            showToast('✅ แนบใบรับประกันเข้าระบบคลังหลักสำเร็จ!');
+            closeModal(null);
+            await initApp(); 
+        }
+
+    } catch (err) {
+        console.error(err);
+        showToast('❌ อัปโหลดใบรับประกันล้มเหลว: ' + err.message);
+    } finally {
+        e.target.value = '';
+        updateHdr();
+    }
 }

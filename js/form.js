@@ -2,6 +2,7 @@
 // Module: Issue Form (Cart & Image Upload System)
 // ==========================================
 
+// ลิงก์ Web App ที่ลงท้ายด้วย /exec ของแท้ของคุณ
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
 
 const TELEGRAM_BOT_TOKEN = '8500752472:AAEcOqBZDYze4NMctxi1CBAWY7MblrqvUDU';
@@ -42,8 +43,9 @@ function filterSerialBySize() {
   sel.innerHTML = '<option value="">-- เลือก TR/SN --</option>' + avFiltered.map(i => `<option value="${i.serial}">${i.serial} / ${i.asset_no || '-'}</option>`).join('');
 }
 
+// 🛡️ ระบบบีบอัดรูปถ่ายอัจฉริยะ ล็อกพิกัดขนาดไม่เกิน 10MB
 async function compressImage(file) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -61,8 +63,23 @@ async function compressImage(file) {
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        const base64Str = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]; 
-        resolve(base64Str);
+        
+        let quality = 0.8;
+        let base64Str = canvas.toDataURL('image/jpeg', quality).split(',')[1]; 
+        let fileSizeInMB = (base64Str.length * 0.75) / (1024 * 1024);
+        
+        // วิ่งลูปบีบอัดความคมชัดลงเรื่อย ๆ หากขนาดไฟล์คำนวณแล้วยังทะลุ 10MB
+        while (fileSizeInMB > 10 && quality > 0.1) {
+          quality -= 0.1;
+          base64Str = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+          fileSizeInMB = (base64Str.length * 0.75) / (1024 * 1024);
+        }
+        
+        if (fileSizeInMB > 10) {
+          reject(new Error('รูปถ่ายมีขนาดใหญ่เกิน 10MB เกินขีดจำกัดระบบ'));
+        } else {
+          resolve(base64Str);
+        }
       }
     }
   });
@@ -71,11 +88,9 @@ async function compressImage(file) {
 async function addToCart() {
   const sel = document.getElementById('s-serial');
   const serial = sel.value;
-  
   if(!serial) { showToast('กรุณาเลือก TR/SN ก่อนกดเพิ่ม'); return; }
   
   const itemInfo = avail().find(i => i.serial === serial);
-  
   if(itemInfo) {
     issueCart.push(itemInfo);
     showToast(`เพิ่ม ${serial} ลงรายการแล้ว`);
@@ -118,13 +133,13 @@ function renderCartUI() {
   }
 }
 
-// 🚀 แก้ไขลิงก์ GPS สำหรับ Telegram ให้ถูกต้องที่นี่
+// 🚀 แจ้งเตือนภารกิจเบิกเข้ากลุ่ม Telegram Bot ปรับปรุงลิงก์ GPS นำทางสะอาดไม่ติดบั๊ก $
 async function sendTelegramAlert(req, team, loc, gps, wbs, cart) {
   let msg = `🚨 <b>แจ้งเตือนเบิกหม้อแปลงใหม่</b>\n\n`;
   msg += `👤 <b>ผู้เบิก:</b> ${req}\n`;
   msg += `👥 <b>ทีมงาน:</b> ${team || '-'}\n`;
   msg += `📍 <b>สถานที่:</b> ${loc || '-'}\n`;
-  msg += `🗺️ <b>GPS:</b> ${gps ? `<a href="https://maps.google.com/maps?q=${gps.replace(/\s/g,'')}">${gps}</a>` : '-'}\n`;
+  msg += `🗺️ <b>GPS:</b> ${gps ? `<a href="http://maps.google.com/?q=${gps.replace(/\s/g,'')}">${gps}</a>` : '-'}\n`;
   msg += `💼 <b>WBS:</b> ${wbs || '-'}\n\n`;
   msg += `📦 <b>รายการเบิก (${cart.length} เครื่อง):</b>\n`;
   
@@ -140,9 +155,7 @@ async function sendTelegramAlert(req, team, loc, gps, wbs, cart) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: 'HTML', disable_web_page_preview: true })
       });
-  } catch(e) {
-      console.error('Telegram error:', e);
-  }
+  } catch(e) { console.error('Telegram error:', e); }
 }
 
 async function doIssueCart() {
@@ -262,7 +275,6 @@ function getGPS() {
     const lat = p.coords.latitude.toFixed(6);
     const lng = p.coords.longitude.toFixed(6);
     inp.value = `${lat}, ${lng}`;
-    inp.removeAttribute('readonly');
     btn.className = 'btn-gps got';
     btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>ได้แล้ว';
     showToast('ดึง GPS สำเร็จ');

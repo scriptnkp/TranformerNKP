@@ -14,6 +14,8 @@ let currentLogPage = 1;
 let currentPendPage = 1; 
 const logsPerPage = 10;
 
+const GAS_URL_EDIT = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
+
 async function initApp() {
   updateHdrStatus('กำลังโหลดข้อมูล...');
   try {
@@ -114,7 +116,8 @@ function renderPending() {
      const trInfo = RAW.find(r => r.serial === l.serial) || {};
      jobMap[groupKey].items.push({
         serial: l.serial, asset_no: trInfo.asset_no, desc: trInfo.description, import_date: trInfo.import_date,
-        issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url
+        issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url,
+        log_warranty_url: l.warranty_photo_url, master_warranty_url: trInfo.warranty_photo_url
      });
   });
 
@@ -131,7 +134,7 @@ function renderPending() {
   
   document.getElementById('pend-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
-    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = job.gps ? `<a href="http://maps.google.com/?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1; border-left: 4px solid var(--color-warning);">
@@ -163,11 +166,12 @@ function renderPending() {
 
             const issueUrls = (i.issue_photo_url || '').split(',').filter(Boolean);
             const installUrls = (i.install_photo_url || '').split(',').filter(Boolean);
+            const allWarranties = [...new Set([...(i.log_warranty_url||'').split(','), ...(i.master_warranty_url||'').split(',')])].filter(Boolean);
 
             let img1Html = issueUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe;"><i class="ti ti-photo" style="font-size:12px;"></i> เบิก ${idx+1}</a>`).join(' ');
             let img2Html = installUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0;"><i class="ti ti-camera" style="font-size:12px;"></i> ติดตั้ง ${idx+1}</a>`).join(' ');
+            let img3Html = allWarranties.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:#d97706; background:#fef08a; padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #fde047;"><i class="ti ti-certificate" style="font-size:12px;"></i> ใบรับประกัน ${idx+1}</a>`).join(' ');
 
-            // ✨ เพิ่มระบบคำนวณวันหมดประกัน (5 ปี) สำหรับหน้ารอตัดจ่าย
             let expText = '';
             if (i.import_date && i.import_date !== '-') {
                const parts = i.import_date.split('.');
@@ -182,14 +186,13 @@ function renderPending() {
               <div>
                 <span style="font-weight:600; color:var(--color-text-primary);">${i.serial}</span> ${i.asset_no ? ' <span style="color:var(--color-text-tertiary);">/ '+i.asset_no+'</span>' : ''} <br> 
                 <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
-                ${(img1Html || img2Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html}</div>` : ''}
+                ${(img1Html || img2Html || img3Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html} ${img3Html}</div>` : ''}
               </div>
               <div style="display:flex; flex-direction:column; align-items:flex-end;">
                 <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
                 ${expText}
               </div>
-            </div>
-            `
+            </div>`
           }).join('')}
         </div>
       </div>
@@ -215,7 +218,6 @@ function renderLog() {
   const monthInput = document.getElementById('log-month-input');
   const searchInput = document.getElementById('log-search-input');
   const sizeInput = document.getElementById('log-size-input');
-  
   if (!monthInput.value) monthInput.value = new Date().toISOString().slice(0, 7);
   
   const currentMonth = monthInput.value;
@@ -253,7 +255,6 @@ function renderLog() {
                         (l.write_off_no || '').toLowerCase().includes(searchTerm);
                         
     const matchSize = !selectedSize || size === selectedSize;
-
     return matchSearch && matchSize;
   });
 
@@ -293,7 +294,8 @@ function renderLog() {
      const trInfo = RAW.find(r => r.serial === l.serial) || {};
      jobMap[groupKey].items.push({
         serial: l.serial, asset_no: trInfo.asset_no, desc: trInfo.description, import_date: trInfo.import_date,
-        issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url
+        issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url,
+        log_warranty_url: l.warranty_photo_url, master_warranty_url: trInfo.warranty_photo_url
      });
   });
 
@@ -310,7 +312,7 @@ function renderLog() {
   
   document.getElementById('log-list').innerHTML = paginatedJobs.length ? paginatedJobs.map((job) => {
     const cleanGPS = (job.gps || '').replace(/\s+/g, '');
-    const gpsLink = job.gps ? `<a href="https://www.google.com/maps/search/?api=1&query=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
+    const gpsLink = job.gps ? `<a href="http://maps.google.com/?q=${cleanGPS}" target="_blank" style="color:var(--color-primary); text-decoration:none; font-weight:500;"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${job.gps} <span style="font-size:10px; background:var(--color-bg-secondary); padding:2px 6px; border-radius:10px; border:1px solid var(--color-border);">นำทาง</span></a>` : '';
 
     return `
     <div class="log-item" style="padding: 16px; border-radius: var(--radius-lg); margin-bottom: 16px; grid-column: 1 / -1;">
@@ -343,11 +345,12 @@ function renderLog() {
 
             const issueUrls = (i.issue_photo_url || '').split(',').filter(Boolean);
             const installUrls = (i.install_photo_url || '').split(',').filter(Boolean);
+            const allWarranties = [...new Set([...(i.log_warranty_url||'').split(','), ...(i.master_warranty_url||'').split(',')])].filter(Boolean);
 
             let img1Html = issueUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-primary); background:var(--color-primary-light); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bfdbfe;"><i class="ti ti-photo" style="font-size:12px;"></i> เบิก ${idx+1}</a>`).join(' ');
             let img2Html = installUrls.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:var(--color-success); background:var(--color-bg-success); padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0;"><i class="ti ti-camera" style="font-size:12px;"></i> ติดตั้ง ${idx+1}</a>`).join(' ');
+            let img3Html = allWarranties.map((url, idx) => `<a href="${url}" target="_blank" style="font-size:10px; color:#d97706; background:#fef08a; padding:3px 8px; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid #fde047;"><i class="ti ti-certificate" style="font-size:12px;"></i> ใบรับประกัน ${idx+1}</a>`).join(' ');
 
-            // ✨ เพิ่มระบบคำนวณวันหมดประกัน (5 ปี) สำหรับหน้าประวัติ
             let expText = '';
             if (i.import_date && i.import_date !== '-') {
                const parts = i.import_date.split('.');
@@ -362,14 +365,13 @@ function renderLog() {
               <div>
                 <span style="font-weight:600; color:var(--color-text-primary);">${i.serial}</span> ${i.asset_no ? ' <span style="color:var(--color-text-tertiary);">/ '+i.asset_no+'</span>' : ''} <br> 
                 <span style="color:var(--color-text-secondary); font-size:11px; display:inline-block; margin-top:2px;">${sizeLabel}</span>
-                ${(img1Html || img2Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html}</div>` : ''}
+                ${(img1Html || img2Html || img3Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html} ${img3Html}</div>` : ''}
               </div>
               <div style="display:flex; flex-direction:column; align-items:flex-end;">
                 <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
                 ${expText}
               </div>
-            </div>
-            `
+            </div>`
           }).join('')}
         </div>
       </div>
@@ -395,7 +397,6 @@ function getEditGPS() {
   const btn = document.getElementById('edit-gps-btn');
   const inp = document.getElementById('edit-gps');
   if (!navigator.geolocation) { showToast('เบราว์เซอร์ไม่รองรับ GPS'); return; }
-  
   btn.innerHTML = '<i class="ti ti-loader ti-spin" aria-hidden="true"></i>กำลังดึง...';
   navigator.geolocation.getCurrentPosition(p => {
     const lat = p.coords.latitude.toFixed(6);
@@ -410,8 +411,9 @@ function getEditGPS() {
   }, { timeout: 10000 });
 }
 
+// 🛡️ บีบอัดภาพล็อกขนาดไม่เกิน 10MB สำหรับโหมดแก้ไข/เพิ่มเติมภายหลัง
 async function compressImageForEdit(file) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -429,8 +431,22 @@ async function compressImageForEdit(file) {
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        const base64Str = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]; 
-        resolve(base64Str);
+        
+        let quality = 0.8;
+        let base64Str = canvas.toDataURL('image/jpeg', quality).split(',')[1]; 
+        let fileSizeInMB = (base64Str.length * 0.75) / (1024 * 1024);
+        
+        while (fileSizeInMB > 10 && quality > 0.1) {
+          quality -= 0.1;
+          base64Str = canvas.toDataURL('image/jpeg', quality).split(',')[1];
+          fileSizeInMB = (base64Str.length * 0.75) / (1024 * 1024);
+        }
+        
+        if (fileSizeInMB > 10) {
+          reject(new Error('ขนาดรูปถ่ายใหญ่เกิน 10MB ขีดจำกัดของระบบ'));
+        } else {
+          resolve(base64Str);
+        }
       }
     }
   });
@@ -439,16 +455,13 @@ async function compressImageForEdit(file) {
 function editJobModal(jobId) {
   const job = window.currentJobGroups.find(g => g.id === jobId);
   if(!job) return;
-  
   window.currentEditJobIds = job.logIds; 
 
   document.getElementById('modal-ttl').textContent = `แก้ไขประวัติเบิก (${job.items.length} เครื่อง)`;
-  
   document.getElementById('modal-body').innerHTML = `
     <div class="fl"><div class="fl-lbl">3. ชื่อผู้เบิก</div><input type="text" id="edit-req" value="${job.req_name}"></div>
     <div class="fl"><div class="fl-lbl">4. ทีมงาน</div><input type="text" id="edit-team" value="${job.team || ''}"></div>
     <div class="fl"><div class="fl-lbl">สถานที่ติดตั้ง</div><input type="text" id="edit-loc" value="${job.location || ''}"></div>
-    
     <div class="fl">
       <div class="fl-lbl">พิกัด GPS (lat,lng)</div>
       <div class="gps-row">
@@ -456,14 +469,15 @@ function editJobModal(jobId) {
         <button class="btn-gps" id="edit-gps-btn" onclick="getEditGPS()"><i class="ti ti-current-location" aria-hidden="true"></i> ดึง GPS</button>
       </div>
     </div>
-    
     <div class="fl"><div class="fl-lbl">WBS</div><input type="text" id="edit-wbs" value="${job.wbs || ''}"></div>
-    
     <div class="fl">
       <div class="fl-lbl">แนบรูปถ่ายหลังติดตั้ง (อัปโหลดเพิ่มเติม)</div>
       <input type="file" id="edit-install-photo" accept="image/*" multiple style="font-size:12px; padding:8px; width:100%; border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary);" />
     </div>
-
+    <div class="fl">
+      <div class="fl-lbl">แนบรูปใบรับประกัน (อัปโหลดเพิ่มเติม)</div>
+      <input type="file" id="edit-warranty-photo" accept="image/*" multiple style="font-size:12px; padding:8px; width:100%; border:1px solid #fde047; border-radius:var(--radius-md); background:#fef08a;" />
+    </div>
     <button class="btn-primary" id="btn-save-edit" onclick="saveEditJob()">บันทึกการแก้ไขทั้งงาน</button>
   `;
   document.getElementById('modal-ov').classList.add('on');
@@ -479,6 +493,8 @@ async function saveEditJob() {
   
   const photoInput = document.getElementById('edit-install-photo');
   const files = photoInput ? photoInput.files : [];
+  const warrantyInput = document.getElementById('edit-warranty-photo');
+  const wFiles = warrantyInput ? warrantyInput.files : [];
 
   if(!req) { showToast('กรุณาระบุชื่อผู้เบิก'); return; }
 
@@ -489,26 +505,22 @@ async function saveEditJob() {
 
   try {
     let newInstallUrls = [];
+    let newWarrantyUrls = [];
+
+    const job = window.currentJobGroups.find(g => g.logIds.includes(logIds[0]));
+    const firstItem = job.items[0];
+    const match = (firstItem.desc || '').match(/(TR.*?KVA)/i);
+    const sizeFolderName = match ? match[1].trim().replace(/[\/\\?%*:|"<>]/g, '-') : 'ไม่ระบุขนาด';
+    const d = new Date();
+    const dStr = String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + (d.getFullYear());
 
     if (files.length > 0) {
-        const gasUrl = 'https://script.google.com/macros/s/AKfycbw3B1w5_1-AOqemLUxPf4Nxbh2lqgH_7t1-csK1jSTQJNHjboeWBmZTnXfU8JGXUadGFA/exec';
-        const job = window.currentJobGroups.find(g => g.logIds.includes(logIds[0]));
-        const firstItem = job.items[0];
-        const match = (firstItem.desc || '').match(/(TR.*?KVA)/i);
-        const sizeFolderName = match ? match[1].trim().replace(/[\/\\?%*:|"<>]/g, '-') : 'ไม่ระบุขนาด';
-        const d = new Date();
-        const dStr = String(d.getDate()).padStart(2,'0') + String(d.getMonth()+1).padStart(2,'0') + (d.getFullYear());
-
         for (let i = 0; i < files.length; i++) {
             updateHdrStatus(`กำลังอัปโหลดรูปภาพติดตั้งเพิ่มเติม (${i+1}/${files.length})...`);
             let b64 = await compressImageForEdit(files[i]);
-            const response = await fetch(gasUrl, {
+            const response = await fetch(GAS_URL_EDIT, {
                 method: 'POST',
-                body: JSON.stringify({
-                    size: sizeFolderName,
-                    installFileName: `02_${firstItem.serial}_${dStr}_edit_${i+1}.jpg`,
-                    installPhotoBase64: b64
-                })
+                body: JSON.stringify({ size: sizeFolderName, installFileName: `02_${firstItem.serial}_${dStr}_edit_${i+1}.jpg`, installPhotoBase64: b64 })
             });
             const resData = await response.json();
             if (resData.status === 'success') {
@@ -517,44 +529,54 @@ async function saveEditJob() {
         }
     }
 
-    let updatePayload = {
-        req_name: req, team: team, location: loc, gps: gps, wbs: wbs
-    };
+    if (wFiles.length > 0) {
+        for (let i = 0; i < wFiles.length; i++) {
+            updateHdrStatus(`กำลังอัปโหลดใบรับประกัน (${i+1}/${wFiles.length})...`);
+            let b64 = await compressImageForEdit(wFiles[i]);
+            const response = await fetch(GAS_URL_EDIT, {
+                method: 'POST',
+                body: JSON.stringify({ size: sizeFolderName, warrantyFileName: `03_${firstItem.serial}_${dStr}_warranty_${i+1}.jpg`, warrantyPhotoBase64: b64 })
+            });
+            const resData = await response.json();
+            if (resData.status === 'success') {
+                resData.data.forEach(d => { if(d.type === 'warranty') newWarrantyUrls.push(d.url); });
+            }
+        }
+    }
+
+    let updatePayload = { req_name: req, team: team, location: loc, gps: gps, wbs: wbs };
 
     if (newInstallUrls.length > 0) {
-        const job = window.currentJobGroups.find(g => g.logIds.includes(logIds[0]));
         const existingUrls = job.items[0].install_photo_url ? job.items[0].install_photo_url.split(',').filter(Boolean) : [];
         const finalUrls = [...existingUrls, ...newInstallUrls].join(',');
         updatePayload.install_photo_url = finalUrls;
     }
 
+    if (newWarrantyUrls.length > 0) {
+        const existingWUrls = job.items[0].log_warranty_url ? job.items[0].log_warranty_url.split(',').filter(Boolean) : [];
+        const finalWUrls = [...existingWUrls, ...newWarrantyUrls].join(',');
+        updatePayload.warranty_photo_url = finalWUrls;
+    }
+
     updateHdrStatus('กำลังอัปเดตฐานข้อมูล...');
     const { error } = await _supabase.from('logs').update(updatePayload).in('id', logIds);
+    if (error) throw error;
 
-    if (error) { 
-      showToast('แก้ไขล้มเหลว'); 
-      updateHdr(); 
-    } else {
-      showToast('บันทึกการแก้ไขเรียบร้อย');
-      closeModal(null);
-      await initApp(); 
-    }
+    showToast('บันทึกการแก้ไขเรียบร้อย');
+    closeModal(null);
+    await initApp(); 
   } catch (err) {
       console.error(err);
-      showToast('เกิดข้อผิดพลาดในการบันทึกรูปภาพ');
+      showToast('เกิดข้อผิดพลาดในการบันทึกรูปภาพ: ' + err.message);
       updateHdr();
   } finally {
-      if(saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.innerHTML = 'บันทึกการแก้ไขทั้งงาน';
-      }
+      if(saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = 'บันทึกการแก้ไขทั้งงาน'; }
   }
 }
 
 function writeOffJobModal(jobId) {
   const job = window.currentJobGroups.find(g => g.id === jobId);
   if(!job) return;
-
   window.currentEditJobIds = job.logIds;
   window.currentEditSerials = job.items.map(i => i.serial); 
 
@@ -579,18 +601,12 @@ async function saveWriteOffJob() {
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="ti ti-loader ti-spin" aria-hidden="true"></i> กำลังบันทึก...';
   updateHdrStatus('กำลังบันทึก...');
-
   const isWrittenOff = writeOffNo !== ''; 
 
   try {
-    const { error: logErr } = await _supabase.from('logs').update({
-      write_off_no: writeOffNo
-    }).in('id', logIds);
+    const { error: logErr } = await _supabase.from('logs').update({ write_off_no: writeOffNo }).in('id', logIds);
     if (logErr) throw logErr;
-
-    const { error: trErr } = await _supabase.from('transformers').update({
-      is_written_off: isWrittenOff
-    }).in('serial', serials);
+    const { error: trErr } = await _supabase.from('transformers').update({ is_written_off: isWrittenOff }).in('serial', serials);
     if (trErr) throw trErr;
 
     showToast('บันทึกเลขตัดจ่ายเรียบร้อย');
@@ -645,22 +661,13 @@ function parseIQ09(text) {
 
 function exportCSV() {
   if (logs.length === 0) { showToast('ไม่มีประวัติ'); return; }
-  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,ทีมงาน,สถานที่,GPS,WBS,เลขตัดจ่าย,วันที่บันทึก,ลิงก์รูปเบิก,ลิงก์รูปติดตั้ง\n';
+  const hdr = 'Serial No.,คำอธิบาย,ผู้เบิก,ทีมงาน,สถานที่,GPS,WBS,เลขตัดจ่าย,วันที่บันทึก,ลิงก์รูปเบิก,ลิงก์รูปติดตั้ง,ลิงก์ใบรับประกัน\n';
   const rows = logs.map(l => {
     const trInfo = RAW.find(r => r.serial === l.serial) || {};
     const desc = (trInfo.description || '').replace(/"/g, '""'); 
+    const allWarranties = [...new Set([...(l.warranty_photo_url||'').split(','), ...(trInfo.warranty_photo_url||'').split(',')])].filter(Boolean).join(' ');
     return [
-      l.serial, 
-      '"' + desc + '"', 
-      l.req_name, 
-      l.team || '', 
-      l.location || '', 
-      l.gps || '', 
-      l.wbs || '',
-      l.write_off_no || '', 
-      l.created_at,
-      l.issue_photo_url || '',
-      l.install_photo_url || ''
+      l.serial, '"' + desc + '"', l.req_name, l.team || '', l.location || '', l.gps || '', l.wbs || '', l.write_off_no || '', l.created_at, l.issue_photo_url || '', l.install_photo_url || '', allWarranties
     ].join(',');
   }).join('\n');
   
