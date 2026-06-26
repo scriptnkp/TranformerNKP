@@ -116,6 +116,7 @@ function renderPending() {
      const trInfo = RAW.find(r => r.serial === l.serial) || {};
      jobMap[groupKey].items.push({
         serial: l.serial, asset_no: trInfo.asset_no, desc: trInfo.description, import_date: trInfo.import_date,
+        sloc: trInfo.sloc,
         issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url,
         log_warranty_url: l.warranty_photo_url, master_warranty_url: trInfo.warranty_photo_url
      });
@@ -189,6 +190,7 @@ function renderPending() {
                 ${(img1Html || img2Html || img3Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html} ${img3Html}</div>` : ''}
               </div>
               <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                ${i.sloc ? `<span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-info); white-space:nowrap; margin-bottom:4px;">SLoc ${i.sloc}</span>` : ''}
                 <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
                 ${expText}
               </div>
@@ -294,6 +296,7 @@ function renderLog() {
      const trInfo = RAW.find(r => r.serial === l.serial) || {};
      jobMap[groupKey].items.push({
         serial: l.serial, asset_no: trInfo.asset_no, desc: trInfo.description, import_date: trInfo.import_date,
+        sloc: trInfo.sloc,
         issue_photo_url: l.issue_photo_url, install_photo_url: l.install_photo_url,
         log_warranty_url: l.warranty_photo_url, master_warranty_url: trInfo.warranty_photo_url
      });
@@ -368,6 +371,7 @@ function renderLog() {
                 ${(img1Html || img2Html || img3Html) ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">${img1Html} ${img2Html} ${img3Html}</div>` : ''}
               </div>
               <div style="display:flex; flex-direction:column; align-items:flex-end;">
+                ${i.sloc ? `<span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-info); white-space:nowrap; margin-bottom:4px;">SLoc ${i.sloc}</span>` : ''}
                 <span class="badge bg-sloc" style="font-size:10px; background:var(--color-bg-card); white-space:nowrap;">มีผลจาก ${i.import_date || '-'}</span>
                 ${expText}
               </div>
